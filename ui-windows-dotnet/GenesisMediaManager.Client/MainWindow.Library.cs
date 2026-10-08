@@ -24,7 +24,10 @@ public partial class MainWindow
         };
 
         var searchRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
-        var searchBox = new TextBox { Width = 320, Margin = new Thickness(0, 0, 8, 0) };
+        // Platzhaltertext der Python-Referenz (setPlaceholderText) - als
+        // ToolTip, da WPF-TextBoxen kein natives Placeholder-Feature haben
+        // (dieselbe Konvention wie in der Suchzeile der Medientabelle).
+        var searchBox = new TextBox { Width = 320, Margin = new Thickness(0, 0, 8, 0), ToolTip = _tr.Tr("library_view.search_placeholder") };
         var searchBtn = new Button { Content = _tr.Tr("library_view.search_button"), Margin = new Thickness(0, 0, 8, 0) };
         var refreshBtn = new Button { Content = _tr.Tr("library_view.refresh_button") };
         searchRow.Children.Add(searchBox);
@@ -174,11 +177,15 @@ public partial class MainWindow
     private ListView BuildLibraryListView(string kind)
     {
         var view = new GridView();
+        var nullConverter = new LibraryNullValueConverter(_tr);
         void AddCol(string headerKey, string bindingPath) =>
             view.Columns.Add(new GridViewColumn
             {
                 Header = _tr.Tr(headerKey),
-                DisplayMemberBinding = new System.Windows.Data.Binding(bindingPath),
+                // Paritaet zu _render_cell() in library_view.py: Null-Werte
+                // werden als lokalisierter Leerwert ("-") angezeigt statt
+                // als leere Stelle.
+                DisplayMemberBinding = new System.Windows.Data.Binding(bindingPath) { Converter = nullConverter },
                 Width = 150,
             });
 
@@ -220,4 +227,26 @@ public partial class MainWindow
         }
         return new ListView { View = view };
     }
+}
+
+/// <summary>
+/// Paritaet zu <c>_render_cell()</c> in
+/// <c>ui-reference-pyside/genesis_ui/views/library_view.py</c>: Null-Werte
+/// in Tabellenzellen werden als lokalisierter Leerwert
+/// (<c>library_view.value_none</c>, "-") angezeigt statt als leere Stelle.
+/// WICHTIG: Wie in der Python-Referenz wird hier NUR <c>null</c> ersetzt -
+/// ein leerer String wird (anders als im Detailbereich, <c>_fmt()</c>)
+/// unveraendert angezeigt.
+/// </summary>
+internal sealed class LibraryNullValueConverter : System.Windows.Data.IValueConverter
+{
+    private readonly GenesisMediaManager.Client.I18n.Translator _tr;
+
+    public LibraryNullValueConverter(GenesisMediaManager.Client.I18n.Translator tr) => _tr = tr;
+
+    public object Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture) =>
+        value is null ? _tr.Tr("library_view.value_none") : value;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture) =>
+        System.Windows.Data.Binding.DoNothing;
 }

@@ -735,3 +735,39 @@ gesamten Liste freigegeben ("mach es der reihe nach bis du fertig bist").
    Ansichten, die ohne eigenen Dokumentationseintrag entstanden) sowie die
    vom Nutzer angeforderte Deep-Search/Review stehen noch aus (nächste
    Sitzung).
+
+## 5. Nachtrag 2026-10-08 — Stichprobenartige WPF-Tiefenprüfung (läuft)
+
+Fortsetzung von Gap K ("stichprobenartige Tiefenprüfung jeder einzelnen
+.NET-Ansicht gegen ihre Python-Referenz"). Geprüft und abgeschlossen:
+Medientabelle (Filter-Dialog/Player/Kontextmenü — ein LUFS-Parse-Bug
+behoben, Player-Parität zu `player_bar.py` geschlossen, siehe
+PROGRESS.md 2026-10-08) und Bibliotheks-Drill-down (Rendering 1:1,
+28 bestehende Tests; zwei Kleinstlücken geschlossen: Null-Zellen zeigen
+jetzt den Leerwert "-" via Binding-Converter, Suchfeld hat den
+Platzhalterhinweis der Python-Referenz). Dabei systematisch aufgefallen:
+
+### L. [MITTEL] WPF zeigt bei fehlgeschlagenen Core-API-Anfragen keinen Fehler-Dialog (Parität zu `show_api_error`, §37)
+
+**Status: OFFEN (neu, 2026-10-08).** Die Python-Referenz-UI zeigt bei
+JEDER fehlgeschlagenen Core-API-Anfrage über
+`genesis_ui/dialogs/error_dialog.py::show_api_error()` (30 Aufrufstellen
+in `views/*.py`) zusätzlich zur Meldung die nachschlagbare Fehler-ID und
+einen Lösungshinweis an — genau die Angaben, die der Nutzer braucht, um
+den Vorfall im Fehler-Center wiederzufinden (§37-Format des globalen
+Exception-Handlers der Core-API). Der WPF-Client stellt API-Fehler
+dagegen überall nur als Inline-Statustext dar
+(`*_view.load_failed`-Muster in allen `MainWindow.*.cs`-Ansichten) und
+parst im `GenesisApiClient` auch nur das `detail`-Feld der
+Fehlerantwort, nicht `error_id`/`solution_hint`. Die Fehlerinformation
+ist damit zwar sichtbar (kein stiller Fehlschlag), aber ohne die
+§37-Referenzdaten und ohne den in der Python-Referenz üblichen Dialog.
+
+**Betroffen:** alle WPF-Ansichten mit API-Abrufen (systematisch, nicht
+auf eine Ansicht beschränkt).
+
+**Empfohlene Umsetzung (ein eigener Inkrement):** `GenesisApiException`
+um `ErrorId`/`SolutionHint` erweitern (Parsen des §37-JSON-Fehlerkörpers
+in `EnsureSuccessWithDetailAsync`), dazu eine zentrale, lokalisierte
+`ShowApiError`-Hilfsfunktion im WPF-Client und deren Nutzung an den
+betroffenen Aufrufstellen (analog zu den 30 `show_api_error`-Stellen).

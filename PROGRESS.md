@@ -1,4 +1,47 @@
 
+## 2026-10-08 (Fortsetzung) - Tiefenprüfung Bibliotheks-Drill-down: Rendering 1:1 bestätigt, zwei Kleinstlücken geschlossen, neue systematische Lücke L dokumentiert
+
+Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), zweiter
+Bereich: Bibliotheks-Drill-down (`MainWindow.Library.cs` +
+`LibraryBrowserSupport.cs` vs.
+`ui-reference-pyside/genesis_ui/views/library_view.py`).
+
+**Ergebnis Zeile-für-Zeile-Vergleich:** Die Render-/Formatierungslogik
+(`Fmt`/`FmtDuration`, alle sechs Detail-Renderer für Interpreten/Alben/
+Titel/Genres/Personen/Quellen inkl. disc.track-Positionierung,
+Rollen-/Werkart-Übersetzung und allen Leerwert-Fallbacks) ist 1:1
+identisch zur Python-Referenz und bereits durch 28 bestehende Tests
+abgedeckt (`LibraryBrowserSupportTests.cs`). Listen-/Detail-/Such-
+Verhalten (Neuladen leert Details, Titel/Quellen rendern ohne zweiten
+Netzwerk-Roundtrip) ebenfalls paritätisch.
+
+**Geschlossene Kleinstlücken (2):**
+- Null-Werte in Tabellenzellen wurden leer angezeigt statt als
+  lokalisierter Leerwert "-" (`_render_cell()`-Parität): neuer
+  `LibraryNullValueConverter` am `DisplayMemberBinding` aller
+  Bibliotheksspalten (ersetzt wie die Python-Referenz NUR null, keine
+  Leerstrings).
+- Das Suchfeld hatte keinen Platzhalterhinweis
+  (`library_view.search_placeholder`-Parität, als ToolTip nach der in
+  der Medientabelle etablierten WPF-Konvention).
+
+**Neue systematische Lücke L dokumentiert (`docs/GAP_ANALYSIS.md`,
+Abschnitt 5):** Die Python-Referenz zeigt bei jeder fehlgeschlagenen
+Core-API-Anfrage einen Fehler-Dialog mit nachschlagbarer Fehler-ID +
+Lösungshinweis (§37, `show_api_error`, 30 Aufrufstellen) — der WPF-
+Client zeigt API-Fehler überall nur als Inline-Statustext und parst
+`error_id`/`solution_hint` nicht. Sichtbar ist der Fehler zwar (kein
+stiller Fehlschlag), aber ohne §37-Referenzdaten. Umsetzungsvorschlag
+steht im Gap-Eintrag; bewusst als eigener Inkrement zurückgestellt, da
+alle ~11 WPF-Ansichten betroffen sind.
+
+**Verifikation:** Wie am Vortag kein `dotnet build`/`dotnet test`
+möglich (dot.net/NuGet in dieser Sandbox nicht erreichbar) —
+Ersatzprüfungen: Klammer-/Strukturcheck der geänderten Datei
+(balanciert), i18n-Abgleich aller neuen Schlüssel in DE/EN/JA/RU
+(vorhanden), Zeile-für-Zeile-Parity-Vergleich. Windows-Build/Testlauf
+weiterhin nachzuholen (siehe Eintrag vom selben Tag, Medientabelle).
+
 ## 2026-10-08 - Tiefenprüfung Medientabelle (WPF vs. Python-Referenz): Player-Parität geschlossen, LUFS-Filter-Bug behoben
 
 Stichprobenartige Tiefenprüfung der Medientabellen-Ansicht des

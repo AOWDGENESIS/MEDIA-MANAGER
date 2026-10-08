@@ -123,7 +123,10 @@ Artwork ab), Hauptfenster mit vollständiger Navigationsstruktur analog zu
   (`MainWindow.xaml.cs::ShowMediaTableAsync` + WPF-freie Hilfslogik in
   `MediaTableSupport.cs`/`MediaCoverSupport.cs`/`MediaFilters.cs`): Frei-
   textsuche, Filter-Dialog (Pendant `SearchFiltersDialog`), Tabelle mit
-  Mehrfachauswahl, eingebetteter Medienplayer, Kontextmenü UND
+  Mehrfachauswahl, eingebetteter Medienplayer (seit 2026-10-08 mit voller
+  Parität zu `player_bar.py`: Seek, Lautstärke, Zeit-/Daueranzeige,
+  Fehleranzeige, Videobild für Filme/Episoden, Stop-and-Clear beim
+  Neuladen), Kontextmenü UND
   Werkzeugleiste mit allen neun Werkzeug-Dialogen (Metadaten-Vorschläge/
   Umbenennen/Artwork/Lautheit/Cutter/Konvertieren/Hörbuch+Kapitel/
   Film+Serie/KI) sowie den zwei One-Shot-Analysen (Fingerprint/

@@ -63,4 +63,30 @@ public static class MediaFileActions
 public static class MediaSearchFiltersSupport
 {
     public static readonly MediaSearchFilters Empty = new();
+
+    /// <summary>
+    /// Parst einen vom Nutzer eingegebenen LUFS-Grenzwert fuer den
+    /// Filter-Dialog (Pendant zu den <c>QDoubleSpinBox</c>-Feldern
+    /// <c>min_lufs</c>/<c>max_lufs</c> in
+    /// <c>search_filters_dialog.py</c>). WICHTIG: Im Gegensatz zum
+    /// generischen 0-als-leer-Verhalten der uebrigen Zahlenfelder ist die
+    /// 0 hier ein GUELTIGER LUFS-Grenzwert ("mindestens/höchstens 0 LUFS")
+    /// und darf NICHT als "nicht gesetzt" verworfen werden - die
+    /// Python-Referenz gibt den Spinbox-Wert ebenfalls unveraendert weiter
+    /// (Deep-Review-Fund: das vorherige Parsen ueber die 0-verwerfende
+    /// Hilfsfunktion ersetzte eine eingegebene 0 stillschweigend durch den
+    /// -60/10-Default). Werte ausserhalb des Spinbox-Bereichs der
+    /// Python-Referenz (-60..10) werden wie dort geklemmt (QDoubleSpinBox
+    /// clampet out-of-range-Eingaben implizit); leere/ungueltige Eingaben
+    /// fallen auf <paramref name="fallback"/> zurueck.
+    /// </summary>
+    public static double ParseLufsOrDefault(string? text, double fallback)
+    {
+        if (double.TryParse(text, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var value))
+        {
+            return Math.Clamp(value, -60.0, 10.0);
+        }
+        return fallback;
+    }
 }

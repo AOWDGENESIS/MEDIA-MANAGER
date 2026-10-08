@@ -530,15 +530,21 @@ public partial class MainWindow : Window
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         // Gap K, siebter inkrementeller Schritt - zusaetzliche Zeile fuer
-        // Werkzeugleiste (Filter/Datei oeffnen/Ordner oeffnen/Pfad
-        // kopieren) + eingebetteten Player (Pendant zu player_bar.py,
-        // Gap-Analyse G), zwischen Suchzeile und Tabelle.
+        // die Werkzeugleiste (Filter/Datei oeffnen/Ordner oeffnen/Pfad
+        // kopieren + Play/Pause/Stop) zwischen Suchzeile und Tabelle. Der
+        // eingebettete Player (§60, Gap-Analyse G) hat seine eigene Zeile
+        // unter dem Detailpanel (siehe RowDefinition unten).
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         // Hoehe gegenueber dem reinen Textpanel (vormals 160) vergroessert,
         // damit die Cover-Vorschau (§8/§22/§59 "COVER", Gap-Analyse D)
         // links davon Platz hat, ohne winzig zu wirken.
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(220) });
+        // §60 (Gap-Analyse G) - zusaetzliche Zeile fuer die persistente
+        // Wiedergabeleiste UNTER dem Detailpanel (dieselbe Position wie in
+        // der Python-Referenz: root.addWidget(self.player_bar) nach dem
+        // Splitter, bleibt beim Wechsel der Auswahl/beim Neuladen sichtbar).
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         var title = new TextBlock
         {
@@ -599,7 +605,6 @@ public partial class MainWindow : Window
         var audiobookBtn = new Button { Content = _tr.Tr("media_table.audiobook_button"), Margin = new Thickness(0, 0, 8, 0), IsEnabled = false };
         var videoBtn = new Button { Content = _tr.Tr("media_table.video_button"), Margin = new Thickness(0, 0, 8, 0), IsEnabled = false };
         var aiBtn = new Button { Content = _tr.Tr("media_table.ai_button"), Margin = new Thickness(0, 0, 16, 0), IsEnabled = false };
-        var playerStatusText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis };
         var toolbarRow = new WrapPanel { Margin = new Thickness(0, 0, 0, 8) };
         toolbarRow.Children.Add(filtersBtn);
         toolbarRow.Children.Add(openFileBtn);
@@ -619,16 +624,62 @@ public partial class MainWindow : Window
         toolbarRow.Children.Add(audiobookBtn);
         toolbarRow.Children.Add(videoBtn);
         toolbarRow.Children.Add(aiBtn);
-        toolbarRow.Children.Add(playerStatusText);
         Grid.SetRow(toolbarRow, 2);
         root.Children.Add(toolbarRow);
 
+        // --- Persistente Wiedergabeleiste (§60, Gap-Analyse G) - Pendant zu
+        // ui-reference-pyside/genesis_ui/widgets/player_bar.py. Neben den
+        // Play/Pause/Stop-Buttons in der Werkzeugleiste oben (die das
+        // Kontextmenue per RaiseEvent wiederverwendet, daher dort bewusst
+        // NICHT dupliziert) bietet die Leiste: Titelanzeige, Suchregler
+        // (Seek), Zeit-/Daueranzeige, Lautstaerkeregler, Fehleranzeige und
+        // ein Videobild ausschliesslich fuer Film-/Serien-Episoden
+        // (VIDEO_KINDS in player_bar.py) - reine Audiowiedergabe braucht
+        // kein Bildfenster. ----------------------------------------------
         var player = new MediaElement
         {
-            LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Manual,
-            Height = 0, Width = 0, Visibility = Visibility.Collapsed,
+            LoadedBehavior = MediaState.Manual,
+            UnloadedBehavior = MediaState.Manual,
+            Height = 0,
+            Visibility = Visibility.Collapsed,
         };
-        root.Children.Add(player);
+        var playerTitleText = new TextBlock { Text = _tr.Tr("player_bar.no_media"), Margin = new Thickness(0, 8, 0, 2) };
+        var positionLabel = new TextBlock { Text = MediaPlayerSupport.FormatTime(0), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) };
+        var durationLabel = new TextBlock { Text = MediaPlayerSupport.FormatTime(0), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 8, 0) };
+        var seekSlider = new Slider { Minimum = 0, Maximum = 0, IsEnabled = false, VerticalAlignment = VerticalAlignment.Center };
+        var volumeLabelText = new TextBlock { Text = _tr.Tr("player_bar.volume_label"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 4, 0) };
+        // Default 80 = 0.8 Lautstaerke wie player_bar.py
+        var volumeSlider = new Slider { Minimum = 0, Maximum = 100, Value = 80, Width = 120, VerticalAlignment = VerticalAlignment.Center };
+        var playerErrorText = new TextBlock { Text = string.Empty, TextWrapping = TextWrapping.Wrap };
+
+        var playerControlsRow = new DockPanel { Margin = new Thickness(0, 2, 0, 0) };
+        playerControlsRow.Children.Add(positionLabel);
+        var volumeBox = new StackPanel { Orientation = Orientation.Horizontal };
+        volumeBox.Children.Add(volumeLabelText);
+        volumeBox.Children.Add(volumeSlider);
+        DockPanel.SetDock(volumeBox, Dock.Right);
+        playerControlsRow.Children.Add(volumeBox);
+        DockPanel.SetDock(durationLabel, Dock.Right);
+        playerControlsRow.Children.Add(durationLabel);
+        // Suchregler fuellt den verbleibenden Platz zwischen Zeit- und
+        // Daueranzeige (LastChildFill-Standard des DockPanel).
+        playerControlsRow.Children.Add(seekSlider);
+
+        var playerBar = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
+        playerBar.Children.Add(player);
+        playerBar.Children.Add(playerTitleText);
+        playerBar.Children.Add(playerControlsRow);
+        playerBar.Children.Add(playerErrorText);
+        Grid.SetRow(playerBar, 5);
+        root.Children.Add(playerBar);
+
+        // Wird zu Beginn von ReloadAsync() aufgerufen (Parity zu
+        // stop_and_clear() in player_bar.py, aufgerufen in
+        // media_table.py::refresh()) - die eigentliche Implementierung
+        // wird unten bei der Player-Verdrahtung zugewiesen; die
+        // Leeraktions-Vorbelegung macht die Methode unabhaengig von der
+        // textuellen Reihenfolge der Initialisierungen.
+        Action stopAndClearPlayer = () => { };
 
         var grid = new DataGrid
         {
@@ -804,6 +855,12 @@ public partial class MainWindow : Window
 
         async Task ReloadAsync(string? search)
         {
+            // Parity zu media_table.py::refresh(): Eine neu geladene
+            // Trefferliste kann die gerade spielende Datei enthalten oder
+            // auch nicht - in beiden Faellen ist "unsichtbar im Hintergrund
+            // weiterspielen" das ueberraschendere Verhalten, daher wird die
+            // Wiedergabe hier bewusst beendet (stop_and_clear()).
+            stopAndClearPlayer();
             try
             {
                 var response = await _api.ListMediaAsync(kind: kind, search: search, filters: activeFilters);
@@ -982,25 +1039,120 @@ public partial class MainWindow : Window
             }
         };
 
-        // --- Eingebetteter Medienplayer (Pendant zu player_bar.py, §8,
-        // Gap-Analyse G) - spielt die lokale Datei der aktuellen Auswahl
-        // direkt ab (MediaElement, keine zusaetzliche Abhaengigkeit noetig). ---
+        // --- Eingebetteter Medienplayer (§60, Gap-Analyse G) - Pendant zu
+        // player_bar.py: spielt die lokale Datei der aktuellen Auswahl
+        // direkt ab (MediaElement, keine zusaetzliche Abhaengigkeit noetig),
+        // mit Seek, Lautstaerke, Zeit-/Daueranzeige, Fehleranzeige und
+        // Videobild fuer Film-/Serien-Medien. ---
+        player.Volume = volumeSlider.Value / 100.0; // Default 0.8 wie player_bar.py
+        volumeSlider.ValueChanged += (_, _) => player.Volume = volumeSlider.Value / 100.0;
+
+        var positionTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(250),
+        };
+        positionTimer.Tick += (_, _) =>
+        {
+            // Waehrend der Nutzer den Suchregler zieht, nicht
+            // dazwischenfunken (Pendant zum isSliderDown()-Check in
+            // player_bar.py::_on_position_changed).
+            if (!seekSlider.IsMouseCaptureWithin && seekSlider.Maximum > 0)
+            {
+                seekSlider.Value = Math.Min(player.Position.TotalMilliseconds, seekSlider.Maximum);
+            }
+            positionLabel.Text = MediaPlayerSupport.FormatTime((long)player.Position.TotalMilliseconds);
+        };
+
+        player.MediaOpened += (_, _) =>
+        {
+            // Dauer erst nach dem Oeffnen bekannt (Pendant zu
+            // durationChanged in player_bar.py).
+            var durationMs = player.NaturalDuration.HasTimeSpan
+                ? player.NaturalDuration.TimeSpan.TotalMilliseconds
+                : 0;
+            seekSlider.Maximum = Math.Max(durationMs, 0);
+            seekSlider.IsEnabled = durationMs > 0;
+            durationLabel.Text = MediaPlayerSupport.FormatTime((long)durationMs);
+            positionTimer.Start();
+        };
+        player.MediaEnded += (_, _) =>
+        {
+            positionTimer.Stop();
+            positionLabel.Text = MediaPlayerSupport.FormatTime(0);
+            seekSlider.Value = 0;
+        };
+        player.MediaFailed += (_, e) =>
+        {
+            // Kein stiller Fehlschlag (Grundprinzip): Wiedergabefehler
+            // (z.B. fehlendes Codec, kaputte Datei) werden sichtbar gemacht
+            // statt einfach stumm zu bleiben - Pendant zu
+            // player_bar.py::_on_error_occurred.
+            positionTimer.Stop();
+            playerErrorText.Text = _tr.Tr(
+                "player_bar.playback_error",
+                ("error", e.ErrorException?.Message ?? string.Empty));
+        };
+        seekSlider.ValueChanged += (_, _) =>
+        {
+            // Nur suchen, wenn der Regler gerade vom Nutzer gezogen wird -
+            // das programmatische Nachfuehren im Timer-Handler darf KEIN
+            // erneutes Setzen von player.Position ausloesen (Pendant zu
+            // sliderMoved in player_bar.py, das ebenfalls nur bei
+            // Nutzerinteraktion feuert).
+            if (seekSlider.IsMouseCaptureWithin && player.NaturalDuration.HasTimeSpan)
+            {
+                player.Position = TimeSpan.FromMilliseconds(seekSlider.Value);
+            }
+        };
+        player.Unloaded += (_, _) =>
+        {
+            // Ansicht verlassen (Navigation): Wiedergabe und Timer stoppen,
+            // damit nach dem Seitenwechsel nichts unsichtbar im Hintergrund
+            // weiterspielt - in der Python-Referenz wird die PlayerBar mit
+            // der Ansicht zerstoert, hier muss das MediaElement explizit
+            // gestoppt werden.
+            positionTimer.Stop();
+            player.Stop();
+        };
+
+        stopAndClearPlayer = () =>
+        {
+            // Parity zu player_bar.py::stop_and_clear(): Player stoppen,
+            // Quelle loeschen, alle Anzeigen/Regler zuruecksetzen,
+            // Videobereich ausblenden.
+            positionTimer.Stop();
+            player.Stop();
+            player.Source = null;
+            playerTitleText.Text = _tr.Tr("player_bar.no_media");
+            playerErrorText.Text = string.Empty;
+            seekSlider.IsEnabled = false;
+            seekSlider.Maximum = 0;
+            seekSlider.Value = 0;
+            positionLabel.Text = MediaPlayerSupport.FormatTime(0);
+            durationLabel.Text = MediaPlayerSupport.FormatTime(0);
+            player.Height = 0;
+            player.Visibility = Visibility.Collapsed;
+        };
+
         playBtn.Click += (_, _) =>
         {
             if (selectedItem is null || !File.Exists(selectedItem.AbsolutePath)) return;
+            // Videobild nur fuer Film-/Serien-Episoden einblenden
+            // (VIDEO_KINDS in player_bar.py) - fuer alle anderen Arten
+            // bleibt das Bildfenster ausgeblendet, um Platz zu sparen.
+            var isVideoKind = selectedItem.Kind is "movie" or "episode";
+            player.Height = isVideoKind ? 220 : 0; // setMinimumHeight(220) in player_bar.py
+            player.Visibility = isVideoKind ? Visibility.Visible : Visibility.Collapsed;
+            playerErrorText.Text = string.Empty;
             if (player.Source != new Uri(selectedItem.AbsolutePath))
             {
                 player.Source = new Uri(selectedItem.AbsolutePath);
             }
             player.Play();
-            playerStatusText.Text = _tr.Tr("player_bar.now_playing", ("title", selectedItem.Filename));
+            playerTitleText.Text = _tr.Tr("player_bar.now_playing", ("title", selectedItem.Filename));
         };
         pauseBtn.Click += (_, _) => player.Pause();
-        stopBtn.Click += (_, _) =>
-        {
-            player.Stop();
-            playerStatusText.Text = string.Empty;
-        };
+        stopBtn.Click += (_, _) => player.Stop();
 
         // --- Aktivierung der Werkzeugleiste je nach Auswahl (Gap K, achter
         // Schritt) - Pendant zu media_table.py::_on_selection_changed().

@@ -55,6 +55,10 @@
          MediaFileActionsSupport.cs (ebenfalls ohne WPF-Abhaengigkeit) hier
          nach demselben Muster eingebunden. -->
     <Compile Include="..\GenesisMediaManager.Client\MediaFileActionsSupport.cs" Link="MediaFileActionsSupport.cs" />
+    <!-- MediaPlayerSupport.cs (Zeitformatierung der Wiedergabeleiste, §60)
+         ist ebenfalls WPF-frei und wird nach demselben Muster eingebunden
+         (MediaPlayerSupportTests.cs). -->
+    <Compile Include="..\GenesisMediaManager.Client\MediaPlayerSupport.cs" Link="MediaPlayerSupport.cs" />
   </ItemGroup>
 
 </Project>

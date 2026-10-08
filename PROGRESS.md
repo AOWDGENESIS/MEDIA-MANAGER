@@ -1,4 +1,63 @@
 
+## 2026-10-08 - Tiefenprüfung Medientabelle (WPF vs. Python-Referenz): Player-Parität geschlossen, LUFS-Filter-Bug behoben
+
+Stichprobenartige Tiefenprüfung der Medientabellen-Ansicht des
+WPF-Clients gegen ihre Python-Referenz (angekündigter, noch offener
+Parity-Arbeitsschritt laut `ui-windows-dotnet/README.md`). Ergebnis:
+
+**Befund 1 (Bug, behoben): LUFS-Grenzwert 0 wurde im Filter-Dialog
+verworfen.** Die beiden LUFS-Felder (`min_lufs`/`max_lufs`, §9/§19)
+wurden über die generische 0-als-"nicht gesetzt"-Hilfsfunktion geparst —
+eine eingegebene 0 ("mindestens/höchstens 0 LUFS") wurde dadurch
+stillschweigend durch den -60/10-Default ersetzt. Die Python-Referenz
+(`search_filters_dialog.py`, QDoubleSpinBox -60..10) gibt den Wert
+unverändert weiter. Fix: neue, WPF-freie Hilfsfunktion
+`MediaSearchFiltersSupport.ParseLufsOrDefault()` in
+`MediaFileActionsSupport.cs` (behält die 0, clampet auf den
+Spinbox-Bereich -60..10, fällt bei leerer/ungültiger Eingabe auf den
+Default zurück), eingebunden in `MainWindow.MediaFilters.cs`,
+abgesichert durch `MediaSearchFiltersSupportLufsTests`.
+
+**Befund 2 (Paritätslücke, geschlossen): Eingebetteter Medienplayer
+(§60) unvollständig.** Der WPF-Player bestand nur aus Play/Pause/Stop
+und einem unsichtbaren MediaElement (Höhe 0) — die Python-Referenz
+(`widgets/player_bar.py`) bietet zusätzlich Suchleiste (Seek),
+Lautstärkeregler (Default 0.8), Zeit-/Daueranzeige, Titelanzeige,
+Fehleranzeige und ein Videobild für Filme/Episoden. Geschlossen:
+
+- Neue persistente Wiedergabeleiste unter dem Detailpanel (Position wie
+  in der Python-Referenz: `root.addWidget(self.player_bar)` nach dem
+  Splitter) mit Titelanzeige (`player_bar.no_media`/`now_playing`),
+  Suchregler (ziehen sucht, Timer-Nachführung funkt nicht dazwischen),
+  Positions-/Daueranzeige, Lautstärkeregler 0-100 (Default 80) und
+  Fehleranzeige (`player_bar.playback_error` bei `MediaFailed` — kein
+  stiller Fehlschlag, Grundprinzip).
+- Videobild (220 px, `setMinimumHeight(220)`-Pendant) ausschließlich für
+  `movie`/`episode` (`VIDEO_KINDS`-Parität), sonst ausgeblendet.
+- `ReloadAsync()` ruft jetzt `stopAndClearPlayer()` auf (Parität zu
+  `stop_and_clear()` in `media_table.py::refresh()` — keine unsichtbar
+  weiterspielende Datei nach Suche/Filter-Neuladen).
+- `Unloaded`-Handler stoppt Wiedergabe/Timer beim Verlassen der Ansicht.
+- Zeitformatierung als WPF-freies `MediaPlayerSupport.FormatTime()`
+  (1:1-Pendant zu `player_bar.py::format_time`, inkl. Negativ-Clamp und
+  Stundenformat ohne Nullpadding), getestet in
+  `MediaPlayerSupportTests`.
+
+**Verifikation (Einschränkung ehrlich dokumentiert):** In dieser
+Sandbox sind `dot.net`/NuGet netzwerkseitig nicht erreichbar, daher war
+diesmal KEIN `dotnet build`/`dotnet test` möglich (in früheren
+Sitzungen über das dotnet-install-Skript verifiziert, siehe
+`ui-windows-dotnet/README.md`). Ersatzprüfungen dieser Sitzung:
+Klammer-/Strukturcheck aller geänderten C#-Dateien (balanciert),
+Grep-Audit (keine Alt-Referenzen auf entfernte Elemente, alle
+Grid-Zeilen konsistent 0-5 belegt), Abgleich jedes neuen i18n-Schlüssels
+mit allen vier Katalogen (alle vorhanden), 1:1-Vergleich jedes
+Verhaltens mit der Python-Referenz Zeile für Zeile. Ein Windows-Build
+(`dotnet build -p:EnableWindowsTargeting=true`) und `dotnet test`
+(einschließlich der neuen Tests) sind vor der nächsten Abnahme
+nachzuholen; die visuelle Player-Abnahme erfordert echtes Windows mit
+Audio-/Videoausgabe.
+
 ## 2026-10-07 - UI v2 / Version 0.2.0
 
 - WPF-Oberflaeche auf modernes Charcoal/Navy-Design mit Sidebar-Icons, Dashboard-Karten, Pill-Aktionen und Connection-Status umgestellt.
@@ -11,7 +70,7 @@
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-01 (Sitzung 11 — Phase 9 Hardening vollständig abgeschlossen; Phasen 3–9 damit insgesamt fertig, Phase 10/Release weiterhin bewusst zurückgestellt)
+Letztes Update: 2026-10-08 (Tiefenprüfung Medientabelle WPF↔Python: Player-Parität geschlossen, LUFS-Filter-Bug behoben — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

@@ -1,0 +1,24 @@
+name: Prompt defect
+description: Report an incorrect, unclear, missing, or broken prompt rule.
+title: "[Defect]: "
+labels: ["triage"]
+body:
+  - type: textarea
+    id: affected_section
+    attributes:
+      label: Affected file and section
+      description: Include language edition, profile, and heading.
+    validations:
+      required: true
+  - type: textarea
+    id: problem_evidence
+    attributes:
+      label: Problem and evidence
+      description: Do not include secrets or private data.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_correction
+    attributes:
+      label: Proposed correction and source
+      description: Prefer an official primary-source URL.

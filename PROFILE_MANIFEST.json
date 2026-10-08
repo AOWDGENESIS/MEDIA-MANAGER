@@ -1,0 +1,348 @@
+{
+  "schema_version": "1.0",
+  "package_version": "1.2.2",
+  "profile_count": 41,
+  "profiles": [
+    {
+      "id": "c",
+      "order": 1,
+      "file": "01-c_DE_EN.md",
+      "de_profile": "C",
+      "en_profile": "C",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "cpp",
+      "order": 2,
+      "file": "02-cpp_DE_EN.md",
+      "de_profile": "C++",
+      "en_profile": "C++",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "rust",
+      "order": 3,
+      "file": "03-rust_DE_EN.md",
+      "de_profile": "Rust",
+      "en_profile": "Rust",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "java",
+      "order": 4,
+      "file": "04-java_DE_EN.md",
+      "de_profile": "Java",
+      "en_profile": "Java",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "kotlin",
+      "order": 5,
+      "file": "05-kotlin_DE_EN.md",
+      "de_profile": "Kotlin",
+      "en_profile": "Kotlin",
+      "integrated_dependencies": [
+        "java"
+      ]
+    },
+    {
+      "id": "csharp-dotnet",
+      "order": 6,
+      "file": "06-csharp-dotnet_DE_EN.md",
+      "de_profile": "C# / .NET",
+      "en_profile": "C# / .NET",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "fsharp",
+      "order": 7,
+      "file": "07-fsharp_DE_EN.md",
+      "de_profile": "F#",
+      "en_profile": "F#",
+      "integrated_dependencies": [
+        "csharp-dotnet"
+      ]
+    },
+    {
+      "id": "javascript",
+      "order": 8,
+      "file": "08-javascript_DE_EN.md",
+      "de_profile": "JavaScript",
+      "en_profile": "JavaScript",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "typescript",
+      "order": 9,
+      "file": "09-typescript_DE_EN.md",
+      "de_profile": "TypeScript",
+      "en_profile": "TypeScript",
+      "integrated_dependencies": [
+        "javascript"
+      ]
+    },
+    {
+      "id": "python",
+      "order": 10,
+      "file": "10-python_DE_EN.md",
+      "de_profile": "Python",
+      "en_profile": "Python",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "go",
+      "order": 11,
+      "file": "11-go_DE_EN.md",
+      "de_profile": "Go",
+      "en_profile": "Go",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "php",
+      "order": 12,
+      "file": "12-php_DE_EN.md",
+      "de_profile": "PHP",
+      "en_profile": "PHP",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "ruby-rails",
+      "order": 13,
+      "file": "13-ruby-rails_DE_EN.md",
+      "de_profile": "Ruby / Rails",
+      "en_profile": "Ruby / Rails",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "swift-objective-c",
+      "order": 14,
+      "file": "14-swift-objective-c_DE_EN.md",
+      "de_profile": "Swift / Objective-C",
+      "en_profile": "Swift / Objective-C",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "dart-flutter",
+      "order": 15,
+      "file": "15-dart-flutter_DE_EN.md",
+      "de_profile": "Dart / Flutter",
+      "en_profile": "Dart / Flutter",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "scala",
+      "order": 16,
+      "file": "16-scala_DE_EN.md",
+      "de_profile": "Scala",
+      "en_profile": "Scala",
+      "integrated_dependencies": [
+        "java"
+      ]
+    },
+    {
+      "id": "r",
+      "order": 17,
+      "file": "17-r_DE_EN.md",
+      "de_profile": "R",
+      "en_profile": "R",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "julia",
+      "order": 18,
+      "file": "18-julia_DE_EN.md",
+      "de_profile": "Julia",
+      "en_profile": "Julia",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "perl",
+      "order": 19,
+      "file": "19-perl_DE_EN.md",
+      "de_profile": "Perl",
+      "en_profile": "Perl",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "lua",
+      "order": 20,
+      "file": "20-lua_DE_EN.md",
+      "de_profile": "Lua",
+      "en_profile": "Lua",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "elixir-erlang-beam",
+      "order": 21,
+      "file": "21-elixir-erlang-beam_DE_EN.md",
+      "de_profile": "Elixir / Erlang (BEAM)",
+      "en_profile": "Elixir / Erlang (BEAM)",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "haskell",
+      "order": 22,
+      "file": "22-haskell_DE_EN.md",
+      "de_profile": "Haskell",
+      "en_profile": "Haskell",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "shell-bash-posix-zsh",
+      "order": 23,
+      "file": "23-shell-bash-posix-zsh_DE_EN.md",
+      "de_profile": "Bash / POSIX sh / zsh",
+      "en_profile": "Bash / POSIX sh / zsh",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "powershell",
+      "order": 24,
+      "file": "24-powershell_DE_EN.md",
+      "de_profile": "PowerShell",
+      "en_profile": "PowerShell",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "sql",
+      "order": 25,
+      "file": "25-sql_DE_EN.md",
+      "de_profile": "SQL (alle Dialekte)",
+      "en_profile": "SQL (all dialects)",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "web-ui-html-css-browser",
+      "order": 26,
+      "file": "26-web-ui-html-css-browser_DE_EN.md",
+      "de_profile": "HTML / CSS / Browser-Webartefakte",
+      "en_profile": "HTML / CSS / Browser Web Artifacts",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "config-json-yaml-xml",
+      "order": 27,
+      "file": "27-config-json-yaml-xml_DE_EN.md",
+      "de_profile": "JSON / YAML / XML / Konfigurationsdateien",
+      "en_profile": "JSON / YAML / XML / Configuration",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "docker-containerfile",
+      "order": 28,
+      "file": "28-docker-containerfile_DE_EN.md",
+      "de_profile": "Docker / Containerfile",
+      "en_profile": "Docker / Containerfile",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "kubernetes",
+      "order": 29,
+      "file": "29-kubernetes_DE_EN.md",
+      "de_profile": "Kubernetes",
+      "en_profile": "Kubernetes",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "terraform-opentofu",
+      "order": 30,
+      "file": "30-terraform-opentofu_DE_EN.md",
+      "de_profile": "Terraform / OpenTofu",
+      "en_profile": "Terraform / OpenTofu",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "ansible",
+      "order": 31,
+      "file": "31-ansible_DE_EN.md",
+      "de_profile": "Ansible",
+      "en_profile": "Ansible",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "other-language-discovery",
+      "order": 32,
+      "file": "32-other-language-discovery_DE_EN.md",
+      "de_profile": "Andere Sprache / Discovery",
+      "en_profile": "Other Language / Discovery",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "api-rest-graphql-grpc-websocket",
+      "order": 33,
+      "file": "33-api-rest-graphql-grpc-websocket_DE_EN.md",
+      "de_profile": "API (REST / GraphQL / gRPC / WebSocket)",
+      "en_profile": "API (REST / GraphQL / gRPC / WebSocket)",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "nosql-cache-message-store",
+      "order": 34,
+      "file": "34-nosql-cache-message-store_DE_EN.md",
+      "de_profile": "NoSQL / Cache / Message Store",
+      "en_profile": "NoSQL / Cache / Message Store",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "github-actions-cicd",
+      "order": 35,
+      "file": "35-github-actions-cicd_DE_EN.md",
+      "de_profile": "GitHub Actions / CI-CD / Release Automation",
+      "en_profile": "GitHub Actions / CI-CD / Release Automation",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "android",
+      "order": 36,
+      "file": "36-android_DE_EN.md",
+      "de_profile": "Android",
+      "en_profile": "Android",
+      "integrated_dependencies": [
+        "kotlin",
+        "java"
+      ]
+    },
+    {
+      "id": "ai-llm-agent-rag",
+      "order": 37,
+      "file": "37-ai-llm-agent-rag_DE_EN.md",
+      "de_profile": "KI / LLM / Agent / RAG",
+      "en_profile": "AI / LLM / Agent / RAG",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "ada-spark",
+      "order": 38,
+      "file": "38-ada-spark_DE_EN.md",
+      "de_profile": "Ada / SPARK",
+      "en_profile": "Ada / SPARK",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "fortran",
+      "order": 39,
+      "file": "39-fortran_DE_EN.md",
+      "de_profile": "Fortran",
+      "en_profile": "Fortran",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "cobol-mainframe",
+      "order": 40,
+      "file": "40-cobol-mainframe_DE_EN.md",
+      "de_profile": "COBOL / Mainframe",
+      "en_profile": "COBOL / Mainframe",
+      "integrated_dependencies": []
+    },
+    {
+      "id": "jvm-other-groovy-clojure",
+      "order": 41,
+      "file": "41-jvm-other-groovy-clojure_DE_EN.md",
+      "de_profile": "Andere JVM-Sprachen (Groovy / Clojure)",
+      "en_profile": "Other JVM Languages (Groovy / Clojure)",
+      "integrated_dependencies": [
+        "java"
+      ]
+    }
+  ]
+}

@@ -1,7 +1,0 @@
-# Release-local/generated files
-*.zip
-*.sha256
-__pycache__/
-*.py[cod]
-.DS_Store
-Thumbs.db

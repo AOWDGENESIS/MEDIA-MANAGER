@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>GenesisMediaManager</AssemblyName>
+    <Version>0.2.0</Version>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
+    <InformationalVersion>0.2.0</InformationalVersion>
+    <RootNamespace>GenesisMediaManager.Client</RootNamespace>
+    <!-- Kein fester Installationspfad, portabel vorbereitet (Originalauftrag §66) -->
+    <SelfContained>false</SelfContained>
+    <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- System.Text.Json ist Teil des .NET SDK (MIT) - keine zusaetzliche
+         Abhaengigkeit fuer die JSON-Kommunikation mit der Core-API noetig. -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Dieselbe .ico-Datei zusaetzlich als WPF-Ressource einbinden (fuer
+         Window.Icon in MainWindow.xaml, Titelleiste/Taskleiste) - getrennt
+         von <ApplicationIcon> oben, das nur das .exe-Dateisymbol setzt
+         (Explorer/Verknuepfungen), aber NICHT automatisch die Fenster-
+         Titelleiste zur Laufzeit beeinflusst. -->
+    <Resource Include="Assets\app-icon.ico" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Datenbank-/Laufzeitdaten (niemals einchecken - Prinzip: echte
+# Medien-/Nutzerdaten gehoeren nicht ins Repo)
+*.db
+*.db-wal
+*.db-shm
+devdata/
+*.log
+
+# .NET
+ui-windows-dotnet/**/bin/
+ui-windows-dotnet/**/obj/
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+
+# Testartefakte
+.coverage
+htmlcov/
+reference/
+
+# Ollama-Modelldaten (werden lokal nachinstalliert, nicht Teil des Repos)
+ollama_data/
+
+# Generierte Installationspakete (deploy/Build-Package.ps1-Ausgabe: ZIP
+# +/- MSI, enthaelt den self-contained .NET-Client inkl. kompletter
+# .NET-Laufzeit - >100MB, wird bei Bedarf neu gebaut, gehoert nicht ins
+# Repo, siehe deploy/README.md).
+/build/
+/release/

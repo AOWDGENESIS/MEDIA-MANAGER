@@ -1,0 +1,4 @@
+# PySide6 = Qt for Python, LGPL-3.0 (bei dynamischem Linking redistributierbar,
+# siehe licenses/THIRD-PARTY-LICENSES.md fuer Details/Pruefung, Prinzip #10).
+PySide6>=6.6,<7.0
+httpx>=0.27,<1.0

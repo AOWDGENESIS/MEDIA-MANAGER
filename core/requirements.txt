@@ -1,0 +1,33 @@
+# GENESIS Media Manager — Core Service Python-Abhängigkeiten
+# Jede Abhängigkeit wird in licenses/THIRD-PARTY-LICENSES.md erfasst (ADR-0005).
+# Alle hier gelisteten Pakete sind Open Source (siehe Lizenzbericht für Details).
+
+sqlalchemy>=2.0,<3.0          # DB-ORM, MIT-Lizenz
+alembic>=1.13,<2.0            # DB-Migrationen, MIT-Lizenz
+pydantic>=2.6,<3.0            # Datenvalidierung/DTOs, MIT-Lizenz
+pydantic-settings>=2.2,<3.0   # Konfiguration, MIT-Lizenz
+fastapi>=0.110,<1.0           # lokale REST-API, MIT-Lizenz
+uvicorn[standard]>=0.29,<1.0  # ASGI-Server, BSD-3-Clause
+httpx>=0.27,<1.0              # HTTP-Client (Ollama/Provider), BSD-3-Clause
+PyYAML>=6.0,<7.0              # Konfigurationsdateien, MIT-Lizenz
+mutagen>=1.47,<2.0            # Audio-Tag-Lesen/Schreiben, GPL-2.0-or-later
+piper-tts>=1.8,<2.0           # Lokale TTS-Engine (§28/§29), GPL-3.0-or-later
+                               # (Stimmen-Modelle separat, siehe ADR-0018)
+python-multipart>=0.0.9       # FastAPI Formulardaten, Apache-2.0
+yt-dlp>=2026.8,<2027.0         # Download-Center YouTube/TikTok-Adapter (§30), Unlicense
+                               # (ruft nur aus, was ein normaler Browser ohnehin ohne
+                               # Login/DRM-Umgehung sehen wuerde, siehe ADR-0019)
+
+# Test/Dev
+pytest>=8.0,<9.0              # Testframework, MIT-Lizenz
+pytest-cov>=5.0,<6.0          # Coverage, MIT-Lizenz
+httpx[cli]>=0.27,<1.0
+httpx2>=2.0,<3.0               # Nur fuer Tests: starlette.testclient (FastAPI
+                               # TestClient) warnt sonst mit StarletteDeprecation-
+                               # Warning, "httpx" sei fuer den Testclient veraltet
+                               # (Deep-Review Sitzung 13) - BSD-3-Clause,
+                               # Nachfolgeprojekt von httpx, selbe Pydantic-/
+                               # Encode-Maintainer. Produktivcode nutzt weiterhin
+                               # regulaeres "httpx" (Ollama/MusicBrainz/AcoustID/
+                               # Cover-Art-Archiv-Clients bleiben unveraendert).
+pip-licenses>=4.4,<5.0        # Lizenzbericht-Generator, MIT-Lizenz

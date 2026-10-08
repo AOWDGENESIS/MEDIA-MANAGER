@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Bewusst KEIN <ProjectReference> auf GenesisMediaManager.Client: jenes
+       Projekt zielt auf net8.0-windows mit UseWPF und benoetigt auf
+       Linux-Build-/CI-Maschinen EnableWindowsTargeting=true (siehe
+       GenesisMediaManager.Client.csproj-Kommentar). Der Translator selbst
+       hat KEINE WPF-Abhaengigkeit (nur System.Text.Json) - deshalb wird
+       die Quelldatei hier verlinkt, damit dieses reine net8.0-Testprojekt
+       auf JEDEM Betriebssystem ohne Windows-Targeting-Pack lauffaehig
+       bleibt (vollstaendiges, plattformunabhaengiges Testumfeld). -->
+  <ItemGroup>
+    <Compile Include="..\GenesisMediaManager.Client\I18n\Translator.cs" Link="I18n\Translator.cs" />
+    <!-- GenesisApiClient.cs enthaelt neben dem HTTP-Client selbst auch alle
+         DTO-Records (MediaItem, MediaDetail, TechnicalMetadata, TrackInfo,
+         ...) sowie MediaTableSupport.cs die reine Formatierungs-/Mapping-
+         Logik der Medientabellen-Ansicht - beides ohne WPF-Abhaengigkeit,
+         daher nach demselben Muster wie Translator.cs oben eingebunden. -->
+    <Compile Include="..\GenesisMediaManager.Client\Api\GenesisApiClient.cs" Link="Api\GenesisApiClient.cs" />
+    <Compile Include="..\GenesisMediaManager.Client\MediaTableSupport.cs" Link="MediaTableSupport.cs" />
+    <Compile Include="..\GenesisMediaManager.Client\MediaCoverSupport.cs" Link="MediaCoverSupport.cs" />
+    <Compile Include="..\GenesisMediaManager.Client\SettingsViewSupport.cs" Link="SettingsViewSupport.cs" />
+    <Compile Include="..\GenesisMediaManager.Client\ProvidersViewSupport.cs" Link="ProvidersViewSupport.cs" />
+    <!-- LibraryBrowserSupport.cs (Bibliotheks-Drill-down, Gap-Analyse B)
+         braucht zusaetzlich die dort verwendeten DTO-Records
+         (LibraryArtistDetail/LibraryAlbumDetail/...), die in
+         Api/DtosGapK.cs liegen - ebenfalls ohne jede WPF-Abhaengigkeit,
+         daher nach demselben Muster eingebunden (gefunden im Deep-Search:
+         letzte bislang ungetestete Support-Klasse im Client). -->
+    <Compile Include="..\GenesisMediaManager.Client\Api\DtosGapK.cs" Link="Api\DtosGapK.cs" />
+    <Compile Include="..\GenesisMediaManager.Client\LibraryBrowserSupport.cs" Link="LibraryBrowserSupport.cs" />
+    <!-- MediaFileActions/MediaSearchFiltersSupport (Datei-/Ordner-oeffnen,
+         Filterdialog-Leerwert-Sentinel) lagen urspruenglich in der WPF-
+         abhaengigen MainWindow.MediaFilters.cs und wurden deshalb im
+         Deep-Search als ungetestete Luecke gefunden; nach Extraktion nach
+         MediaFileActionsSupport.cs (ebenfalls ohne WPF-Abhaengigkeit) hier
+         nach demselben Muster eingebunden. -->
+    <Compile Include="..\GenesisMediaManager.Client\MediaFileActionsSupport.cs" Link="MediaFileActionsSupport.cs" />
+  </ItemGroup>
+
+</Project>

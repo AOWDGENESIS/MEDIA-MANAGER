@@ -1,0 +1,34 @@
+[project]
+name = "genesis-core"
+version = "0.2.0"
+description = "GENESIS Media Manager - lokaler Core Service (Scanner, DB, Metadaten, Jobs, AI, API)"
+requires-python = ">=3.11"
+license = { text = "TBD - siehe /licenses (ADR-0005), Projektlizenz wird erst nach vollstaendiger Abhaengigkeitspruefung festgelegt (Prinzip #64)" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+
+# Deep-Review Sitzung 13: FastAPI's eigenes, offiziell empfohlenes
+# Dependency-Injection-Muster (`param: T = Depends(...)` direkt als
+# Funktions-Default, ebenso Query()/Header()/Body()/etc.) loest sonst
+# faelschlich B008 ("function-call-in-default-argument") aus - das ist
+# eine bekannte, von ruff selbst dokumentierte Ausnahme fuer FastAPI-
+# Projekte, kein echter Bug (die "aufgerufene Funktion" liefert hier
+# bewusst ein Marker-Objekt, das FastAPI zur Request-Zeit interpretiert,
+# nicht einen einmalig ausgewerteten veraenderlichen Default-Wert).
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Cookie",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Security",
+]

@@ -1,0 +1,53 @@
+name: Windows-Installationspaket bauen
+
+# Baut auf echtem Windows sowohl das ZIP-Paket (funktioniert ueberall,
+# keine Adminrechte noetig) als auch das echte MSI mit dem WiX-Toolset
+# (WiX kann nur unter Windows laufen, siehe deploy/wix/Product.wxs und
+# deploy/README.md fuer die Begruendung - daher dieser Workflow statt
+# eines lokalen Linux-Builds fuer das MSI).
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "deploy/**"
+      - "ui-windows-dotnet/**"
+      - "core/**"
+      - "i18n/**"
+      - ".github/workflows/build-windows-installer.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Quellcode auschecken
+        uses: actions/checkout@v4
+
+      - name: .NET SDK einrichten
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: WiX-Toolset-CLI installieren
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: WiX-Util-Erweiterung installieren
+        run: wix extension add WixToolset.Util.wixext/5.0.2
+
+      - name: Paket bauen (ZIP + MSI)
+        shell: pwsh
+        run: ./deploy/Build-Package.ps1 -BuildMsi
+
+      - name: ZIP als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenesisMediaManager-Setup-zip
+          path: build/GenesisMediaManager-Setup.zip
+          if-no-files-found: error
+
+      - name: MSI als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenesisMediaManager-Setup-msi
+          path: build/package/GenesisMediaManager-Setup.msi
+          if-no-files-found: error

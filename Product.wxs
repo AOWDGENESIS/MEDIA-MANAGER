@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GENESIS Media Manager - WiX v5 Installationspaket (echtes MSI).
+
+  WICHTIGER HINWEIS ZUR BAU-UMGEBUNG: Das WiX Toolset kann ein echtes MSI
+  nur unter Windows erzeugen (es nutzt die Windows-Installer-COM-APIs;
+  siehe https://github.com/wixtoolset/issues/issues/7154 und die
+  WiX-Maintainer-Aussage in https://github.com/orgs/wixtoolset/discussions/7972:
+  "WiX only runs on Windows... YMMV with Wine"). Dieses .wxs wurde daher in
+  der Linux-Entwicklungssandbox NUR auf Schema-/Strukturkorrektheit
+  geprueft, NICHT tatsaechlich zu einem MSI gebaut. Ein echtes,
+  verifiziertes MSI entsteht automatisch ueber den GitHub-Actions-Workflow
+  ".github/workflows/build-windows-installer.yml" (laeuft auf
+  windows-latest) oder manuell auf einem echten Windows-Rechner mit
+  installiertem WiX-Toolset ueber deploy/Build-Package.ps1.
+
+  Installiert pro Benutzer (kein Admin noetig) nach
+  %LOCALAPPDATA%\Programs\GenesisMediaManager - Client (self-contained
+  .NET/WPF), Core-Service-Quellcode (Python) und die gemeinsamen
+  i18n-Sprachkataloge. Die Python-Laufzeitumgebung fuer den Core-Service
+  wird NICHT von MSI selbst verwaltet (Windows Installer eignet sich
+  schlecht fuer laengere Netzwerkoperationen wie "pip install"), sondern
+  per deferred CustomAction ueber Setup-PythonRuntime.ps1 angestossen
+  (dieselbe Logik wie beim einfachen PowerShell-Installer, siehe
+  installer/Install-GenesisMediaManager.ps1).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="GENESIS Media Manager"
+           Manufacturer="GENESIS Media Manager Projekt"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="9C6DAF63-C4D5-45B6-83D6-9E189E80DF30"
+           Scope="perUser">
+
+    <SummaryInformation Description="GENESIS Media Manager - lokale Medienbibliothek (Client + Core-Service)" />
+
+    <MajorUpgrade DowngradeErrorMessage="Eine neuere Version von GENESIS Media Manager ist bereits installiert." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Fuer Programs-und-Features-Eintrag / ARP (Add/Remove Programs) -->
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/" />
+    <Icon Id="AppIcon.exe" SourceFile="$(var.ClientSourceDir)\GenesisMediaManager.exe" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="GenesisMediaManager">
+          <Directory Id="ClientDir" Name="client" />
+          <Directory Id="BackendDir" Name="backend" />
+          <Directory Id="I18nDir" Name="i18n" />
+          <Directory Id="InstallerDir" Name="installer" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppProgramsMenuDir" Name="GENESIS Media Manager" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- Automatisch geharvestete Dateigruppen (WiX v5 Files-Harvesting,
+         ersetzt das frühere heat.exe - siehe
+         https://docs.firegiant.com/wix/whatsnew/#file-harvesting). -->
+    <ComponentGroup Id="ClientFiles" Directory="ClientDir">
+      <Files Include="$(var.ClientSourceDir)\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="BackendFiles" Directory="BackendDir">
+      <Files Include="$(var.BackendSourceDir)\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="I18nFiles" Directory="I18nDir">
+      <Files Include="$(var.I18nSourceDir)\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="InstallerScriptFiles" Directory="InstallerDir">
+      <Files Include="$(var.InstallerSourceDir)\*.ps1" />
+    </ComponentGroup>
+
+    <!-- Start-Skript direkt im Installationswurzelordner -->
+    <Component Id="StartScript" Directory="INSTALLFOLDER" Guid="FD7234A2-0569-4697-936B-7A71A6B33FD7">
+      <File Id="StartBat" Source="$(var.StartScriptSource)" Name="Start-GenesisMediaManager.bat" KeyPath="yes" />
+    </Component>
+
+    <!-- Verknuepfungen -->
+    <Component Id="StartMenuShortcut" Directory="AppProgramsMenuDir" Guid="373F8980-3761-4F72-AB08-F9C7043AFC4D">
+      <Shortcut Id="StartMenuShortcutGenesis"
+                Name="GENESIS Media Manager"
+                Target="[INSTALLFOLDER]Start-GenesisMediaManager.bat"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.exe" />
+      <RemoveFolder Id="RemoveStartMenuDir" Directory="AppProgramsMenuDir" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\GenesisMediaManager" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="18B18617-D281-44A7-956D-CBF8682A11C2">
+      <Shortcut Id="DesktopShortcutGenesis"
+                Name="GENESIS Media Manager"
+                Target="[INSTALLFOLDER]Start-GenesisMediaManager.bat"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.exe" />
+      <RegistryValue Root="HKCU" Key="Software\GenesisMediaManager" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Nicht von MSI getrackte Laufzeit-Artefakte (venv, pip-Cache) beim
+         Deinstallieren ebenfalls entfernen (util:RemoveFolderEx,
+         WixToolset.Util.wixext). Property wird ueber eine CustomAction
+         gesetzt (NICHT als Property/@Value direkt - WiX erlaubt dort
+         keine Referenz auf eine andere Property, siehe WIX1077). -->
+    <Component Id="CleanupVenvOnUninstall" Directory="INSTALLFOLDER" Guid="6B3F0E0E-6A52-4D4E-9B8E-2B9E9F2E9E6C">
+      <RegistryValue Root="HKCU" Key="Software\GenesisMediaManager" Name="CleanupVenv" Type="integer" Value="1" KeyPath="yes" />
+      <util:RemoveFolderEx On="uninstall" Property="INSTALLFOLDER_VENV" />
+    </Component>
+    <CustomAction Id="SetInstallFolderVenv" Property="INSTALLFOLDER_VENV" Value="[INSTALLFOLDER].venv" />
+
+    <!-- Nach Dateiinstallation: Python-Laufzeitumgebung einrichten.
+         "asyncNoWait", weil "pip install" 1-2 Minuten dauern kann und MSI
+         sonst scheinbar haengen bleibt - laeuft im Hintergrund weiter,
+         nachdem der Installationsdialog bereits fertig gemeldet ist.
+         Bewusst OHNE Elevate/Systemkontext (Scope="perUser" installiert
+         bereits ohne Admin, pip schreibt nur in den lokalen venv-Ordner). -->
+    <CustomAction Id="RunPythonSetup"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[InstallerDir]Setup-PythonRuntime.ps1&quot; -InstallDir &quot;[INSTALLFOLDER]&quot;"
+                  Execute="immediate"
+                  Return="asyncNoWait" />
+
+    <InstallExecuteSequence>
+      <Custom Action="SetInstallFolderVenv" Before="RemoveFiles" Condition="INSTALLFOLDER" />
+      <Custom Action="RunPythonSetup" After="InstallFinalize" Condition="NOT Installed" />
+    </InstallExecuteSequence>
+
+    <Feature Id="MainFeature" Title="GENESIS Media Manager" Level="1">
+      <ComponentGroupRef Id="ClientFiles" />
+      <ComponentGroupRef Id="BackendFiles" />
+      <ComponentGroupRef Id="I18nFiles" />
+      <ComponentGroupRef Id="InstallerScriptFiles" />
+      <ComponentRef Id="StartScript" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+      <ComponentRef Id="CleanupVenvOnUninstall" />
+    </Feature>
+  </Package>
+</Wix>

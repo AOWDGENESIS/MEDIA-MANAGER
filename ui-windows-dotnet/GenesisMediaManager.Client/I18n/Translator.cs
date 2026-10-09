@@ -151,10 +151,13 @@ public sealed class Translator
     /// </summary>
     private static string FormatNamed(string template, (string Name, object Value)[] args)
     {
-        var values = new Dictionary<string, string>();
+        // Rohwerte statt vorformatierter Strings: der Python-Formatspec
+        // ({name:.1f}) wird erst beim Einsetzen ausgewertet, siehe
+        // FormatValue/PythonSpecToNet unten.
+        var values = new Dictionary<string, object?>();
         foreach (var (name, value) in args)
         {
-            values[name] = value?.ToString() ?? string.Empty;
+            values[name] = value;
         }
 
         var result = new System.Text.StringBuilder(template.Length);
@@ -179,10 +182,18 @@ public sealed class Translator
                 var closeIndex = template.IndexOf('}', i + 1);
                 if (closeIndex > i)
                 {
-                    var name = template.Substring(i + 1, closeIndex - i - 1);
+                    var inside = template.Substring(i + 1, closeIndex - i - 1);
+                    // Pythons str.format kennt neben {name} auch
+                    // {name:formatspec} - z.B. voice_studio.synthesize_done
+                    // mit "{duration:.1f}s". Spec abtrennen, damit der
+                    // Name im Dictionary gefunden wird.
+                    var colonIndex = inside.IndexOf(':');
+                    var name = colonIndex < 0 ? inside : inside[..colonIndex];
                     if (values.TryGetValue(name, out var substituted))
                     {
-                        result.Append(substituted);
+                        result.Append(FormatValue(
+                            substituted,
+                            colonIndex < 0 ? null : inside[(colonIndex + 1)..]));
                         i = closeIndex + 1;
                         continue;
                     }
@@ -197,6 +208,64 @@ public sealed class Translator
             i += 1;
         }
         return result.ToString();
+    }
+
+    /// <summary>
+    /// Einsetzen eines Platzhalterwerts. Zahlen (und andere
+    /// IFormattable-Typen) werden IMMER mit InvariantCulture formatiert:
+    /// Pythons <c>str.format(**kwargs)</c> in den beiden anderen
+    /// i18n-Implementierungen ist ebenfalls locale-unabhaengig - ohne das
+    /// wuerde z.B. der voice_studio.synthesize_done-Dauerwert unter
+    /// deutschem Windows als "3,5" statt "3.5" angezeigt und wiche damit
+    /// von der Python-Referenz-UI ab (derselbe Befundtyp wie die
+    /// Prozent-/Groessenformate in den *Support-Klassen).
+    /// </summary>
+    private static string FormatValue(object? value, string? spec)
+    {
+        if (value is null)
+        {
+            return string.Empty;
+        }
+        if (value is System.IFormattable formattable)
+        {
+            return formattable.ToString(
+                PythonSpecToNet(spec), System.Globalization.CultureInfo.InvariantCulture);
+        }
+        return value.ToString() ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Abbildung eines Python-Formatspecs auf ein .NET-Format. Nur die in
+    /// den geteilten i18n-Katalogen tatsaechlich verwendeten Specs werden
+    /// unterstuetzt (Stand heute ausschliesslich ".1f" in
+    /// voice_studio.synthesize_done, alle vier Sprachen). ".Nf" entspricht
+    /// 1:1 dem .NET-Format "FN" (Festkomma, N Nachkommastellen).
+    /// Unbekannte Specs ergeben null (Standardformat) statt einer Exception.
+    /// </summary>
+    private static string? PythonSpecToNet(string? spec)
+    {
+        if (spec is null)
+        {
+            return null;
+        }
+        if (spec.Length >= 3 && spec[0] == '.' && spec[^1] == 'f')
+        {
+            var digits = spec.Substring(1, spec.Length - 2);
+            var allDigits = digits.Length > 0;
+            foreach (var ch in digits)
+            {
+                if (!char.IsDigit(ch))
+                {
+                    allDigits = false;
+                    break;
+                }
+            }
+            if (allDigits)
+            {
+                return "F" + digits;
+            }
+        }
+        return null;
     }
 
 

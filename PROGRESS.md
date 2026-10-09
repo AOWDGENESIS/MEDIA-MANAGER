@@ -1,4 +1,86 @@
 
+## 2026-10-09 (Fortsetzung 5) - Tiefenprüfung Voice Studio: Locale-Bug Nr. 5, Formatspec-Support im Translator und Paritätslücken behoben
+
+Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), sechster
+Bereich: Voice Studio (`MainWindow.VoiceStudio.cs` vs.
+`ui-reference-pyside/genesis_ui/views/voice_studio_view.py`, §28/§29,
+ADR-0018).
+
+**Befund 1 (Bug, behoben): Historien-Dauer war systemkulturabhängig.**
+`$"{r.DurationSeconds:F1}s"` zeigt unter deutschem Windows "3,5s" statt
+"3.5s" (Pythons `f"{d:.1f}s"` ist locale-unabhängig). Zusätzlich
+Paritätslücke: Python behandelt per `if r.get(...)` auch 0.0 als fehlend
+("-"), der WPF-Code zeigte "0,0s". Fix: neue WPF-freie
+`VoiceStudioSupport.FormatHistoryDuration()` (InvariantCulture, null/0 →
+"-"), getestet in `VoiceStudioSupportTests` (u.a. unter erzwungener
+de-DE-Kultur). Fünfter Befund der Locale-Fehlerklasse nach Duplikaten-
+Confidence, Download-Größe, KI-Score und Translator-Platzhaltern.
+
+**Befund 2 (Bug, behoben): `created_at` nicht auf 19 Zeichen gekürzt.**
+Python schneidet mit `[:19]` Mikrosekunden/Zeitzonen-Reste ab, BEVOR
+das T ersetzt wird; der WPF-Code ersetzte nur das T und zeigte dadurch
+"2026-10-08 12:34:56.789012+00:00". Fix:
+`VoiceStudioSupport.FormatHistoryCreatedAt()` mit exakter
+Python-Reihenfolge, getestet.
+
+**Befund 3 (Bug, behoben): Python-Formatspec `{duration:.1f}` im
+i18n-Katalog wurde vom .NET-Translator nicht verstanden.** Der geteilte
+Schlüssel `voice_studio.synthesize_done` enthält in allen vier Sprachen
+`{duration:.1f}`; der Translator suchte dadurch einen Wert namens
+"duration:.1f" und ließ den Platzhalter roh im Anzeigetext stehen. Fix:
+`Translator.FormatNamed()` versteht jetzt `{name:formatspec}` — die in
+den Katalogen verwendeten Specs (aktuell nur `.Nf`) werden auf das
+entsprechende .NET-Format (`FN`) abgebildet und wie alle Zahlen IMMER
+mit InvariantCulture formatiert (Pythons `str.format` ist ebenfalls
+locale-unabhängig). Die geteilten JSON-Kataloge bleiben damit für alle
+drei i18n-Implementierungen unverändert. Getestet: exakter
+synthesize_done-Output unter de-DE ("Fertig (3.5s) - ..."),
+Integer-Platzhalter ohne Spec.
+
+**Befund 4 (Parität, hergestellt): Python-`or`-Fallbacks.**
+Sprache/Lizenz im Profil-Grid und die Lizenz in der
+Profildetail-Zeile nutzen in der Referenz `x or fallback` — leerer
+String gilt ebenfalls als "nicht vorhanden". Der WPF-Code nutzte `??`
+und ließ Leerstrings durchrutschen. Fix: Umstellung auf das etablierte
+`DownloadCenterSupport.OrFallback()` (drei Stellen).
+
+**Befund 5 (Parität, hergestellt): Medien-Stopp beim Verlassen der
+Ansicht.** In Python stirbt der QMediaPlayer mit der Ansicht; das
+WPF-MediaElement spielte nach dem Navigieren unsichtbar weiter. Fix:
+`player.Unloaded += Stop` (gleiches Idiom wie der Haupt-Medientabellen-
+Player in `MainWindow.xaml.cs`).
+
+**Befund 6 (Parität, hergestellt): Sprachfeld-Platzhalter.** Python
+zeigt im Sprachfeld den Platzhalter "de / en / ja / ru ..."; WPF-
+TextBoxen kennen das nicht — Haus-Konvention ToolTip ergänzt (wie bei
+`MainWindow.Library.cs::searchBox`).
+
+**Bestätigt ohne Befund:** Zwei-Tabs-Aufbau; Statusbanner-Vierweg
+(Laden-Fehler/deaktiviert/nicht verfügbar/aktiv mit Provider);
+Engine-Katalog mit Fehler-Fallback auf leere Liste und Engine-Hinweisen
+(Lizenz-/Notizen-Anzeige; dass WPF bei None "-" statt Pythons "None"
+zeigt, ist wie im KI-Center bewusst beibehalten); Erstellen-Flow
+(Name-pflichtig → Bestätigungsdialog mit allen §28-Feldern, Default No
+→ Payload mit or-None-Konvertierungen → Felder leeren + Formular
+verbergen + Neuladen); Löschen-Flow (Bestätigen → exakte Namenseingabe
+per Dialog-Pendant zu QInputDialog → Mismatch-Warnung → DELETE mit
+`{confirm, confirm_name}`); TTS-Flow (kein-Profil-Warnung →
+Bestätigen Default No → synthesizing → done mit Dauer/Pfad bzw. failed
+→ Historie neu laden); Exportformate wav/mp3/flac; Textvorschau der
+Historie ≤60 Zeichen sonst [:57]+"..."; leere Anfrage wird vor dem
+Synthetisieren blockiert; `CanUserSortColumns=false` auf beiden Grids
+(Schutz vor Indexzugriff auf falsche Zeile); Auswahl→Löschen/Abspielen-
+Freischaltung; Kombobox-Wiederherstellung nach Neuladen (Index merken,
+Fallback auf erstes Element). API-Ebene: alle sieben Voice-Endpunkte
+(Status, Engines, Profile CRUD, Synthetisieren/Test, Historie) mit
+Payloads und confirm-Schaltern 1:1 gegen `api_client.py` Zeilen 517-562
+geprüft.
+
+**Verifikation:** Wie zuvor kein `dotnet build`/`dotnet test` möglich
+(dot.net/NuGet in dieser Sandbox nicht erreichbar) — Ersatzprüfungen:
+Klammer-/Strukturcheck (balanciert), Zeile-für-Zeile-Parity-Vergleich.
+Windows-Build/Testlauf weiterhin nachzuholen.
+
 ## 2026-10-08 (Fortsetzung 4) - Tiefenprüfung KI-Center: Score-Locale-Bug behoben, ansonsten volle Parität bestätigt
 
 Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), fünfter
@@ -267,7 +349,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-08 (Tiefenprüfung KI-Center: Score-Locale-Bug behoben, volle Parität bestätigt — siehe oberster Eintrag)
+Letztes Update: 2026-10-09 (Tiefenprüfung Voice Studio: Locale-Bug Nr. 5, Formatspec-Support im Translator und Paritätslücken behoben — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

@@ -79,7 +79,11 @@ public partial class MainWindow
         DockPanel.SetDock(browseModelBtn, Dock.Right);
         modelPathRow.Children.Add(browseModelBtn);
         modelPathRow.Children.Add(modelPathEdit);
-        var languageEdit = new TextBox { Margin = new Thickness(0, 0, 0, 4) };
+        // Python setzt hier einen echten Platzhaltertext
+        // (setPlaceholderText "de / en / ja / ru ..."); WPF-TextBoxen
+        // kennen das nicht, daher die Haus-Konvention ToolTip
+        // (vgl. MainWindow.Library.cs::searchBox).
+        var languageEdit = new TextBox { Margin = new Thickness(0, 0, 0, 4), ToolTip = "de / en / ja / ru ..." };
         var descriptionEdit = new TextBox { Margin = new Thickness(0, 0, 0, 4) };
         var licenseEdit = new TextBox { Margin = new Thickness(0, 0, 0, 4) };
         var offlineCheck = new CheckBox { Content = _tr.Tr("voice_studio.field_offline_capable"), IsChecked = true, Margin = new Thickness(0, 0, 0, 4) };
@@ -153,6 +157,15 @@ public partial class MainWindow
         ttsPanel.Children.Add(playbackRow);
 
         var player = new MediaElement { LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Manual, Visibility = Visibility.Collapsed };
+        player.Unloaded += (_, _) =>
+        {
+            // Ansicht verlassen (Navigation): Wiedergabe stoppen, damit nach
+            // dem Seitenwechsel nichts unsichtbar im Hintergrund weiterspielt -
+            // in der Python-Referenz stirbt der QMediaPlayer mit der Ansicht,
+            // hier muss das MediaElement explizit gestoppt werden
+            // (gleiches Idiom wie MediaElement in MainWindow.xaml.cs).
+            player.Stop();
+        };
         ttsPanel.Children.Add(player);
 
         ttsPanel.Children.Add(new TextBlock { Text = _tr.Tr("voice_studio.history_title"), Margin = new Thickness(0, 4, 0, 4), FontWeight = FontWeights.SemiBold });
@@ -227,10 +240,14 @@ public partial class MainWindow
             }
             historyGrid.ItemsSource = history.Select(r => new
             {
-                CreatedAt = (r.CreatedAt ?? string.Empty).Replace("T", " "),
+                // Beide Zellen in VoiceStudioSupport (Paritaet zu
+                // _reload_history in voice_studio_view.py +
+                // InvariantCulture, damit unter de-DE nicht "3,5s"
+                // statt "3.5s" angezeigt wird).
+                CreatedAt = VoiceStudioSupport.FormatHistoryCreatedAt(r.CreatedAt),
                 TextPreview = r.Text.Length <= 60 ? r.Text : r.Text[..57] + "...",
                 r.ExportFormat,
-                DurationText = r.DurationSeconds is null ? "-" : $"{r.DurationSeconds:F1}s",
+                DurationText = VoiceStudioSupport.FormatHistoryDuration(r.DurationSeconds),
             }).ToList();
         }
 
@@ -244,7 +261,7 @@ public partial class MainWindow
             var p = profiles[ttsProfileCombo.SelectedIndex];
             disclosureLabel.Text = _tr.Tr(
                 "voice_studio.profile_disclosure",
-                ("engine", p.Engine), ("license", p.ModelLicense ?? _tr.Tr("voice_studio.unknown")),
+                ("engine", p.Engine), ("license", DownloadCenterSupport.OrFallback(p.ModelLicense, _tr.Tr("voice_studio.unknown"))),
                 ("offline", YesNoStatic(p.OfflineCapable, _tr)), ("open_source", YesNoStatic(p.OpenSource, _tr)),
                 ("commercial", YesNoStatic(p.CommercialUseAllowed, _tr)));
         }
@@ -264,7 +281,10 @@ public partial class MainWindow
             }
             profilesGrid.ItemsSource = profiles.Select(p => new
             {
-                p.Name, p.Engine, Language = p.Language ?? "-", License = p.ModelLicense ?? "-",
+                // OrFallback statt ?? - Python nutzt hier "or" (leerer
+                // String wird ebenfalls zu "-", Zeilen 319-320 der Referenz).
+                p.Name, p.Engine, Language = DownloadCenterSupport.OrFallback(p.Language, "-"),
+                License = DownloadCenterSupport.OrFallback(p.ModelLicense, "-"),
                 Offline = YesNoStatic(p.OfflineCapable, _tr), OpenSource = YesNoStatic(p.OpenSource, _tr),
                 Commercial = YesNoStatic(p.CommercialUseAllowed, _tr),
             }).ToList();

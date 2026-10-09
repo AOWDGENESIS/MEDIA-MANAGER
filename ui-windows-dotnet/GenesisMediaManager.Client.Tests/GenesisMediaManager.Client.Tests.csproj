@@ -70,6 +70,10 @@
     <!-- AiCenterSupport.cs (Score-Prozentformat des KI-Centers, §25/§26)
          ebenfalls WPF-frei - eingebunden fuer AiCenterSupportTests.cs. -->
     <Compile Include="..\GenesisMediaManager.Client\AiCenterSupport.cs" Link="AiCenterSupport.cs" />
+    <!-- VoiceStudioSupport.cs (Historien-Zeit-/Dauerformate des Voice
+         Studios, §28/§29) ebenfalls WPF-frei - eingebunden fuer
+         VoiceStudioSupportTests.cs. -->
+    <Compile Include="..\GenesisMediaManager.Client\VoiceStudioSupport.cs" Link="VoiceStudioSupport.cs" />
   </ItemGroup>
 
 </Project>

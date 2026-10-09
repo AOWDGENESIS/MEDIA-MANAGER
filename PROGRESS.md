@@ -1,4 +1,60 @@
 
+## 2026-10-08 (Fortsetzung 2) - Tiefenprüfung Duplikate-Ansicht: Locale-Bug bei Confidence-Anzeige behoben, Fehler-/Reload-Parität hergestellt, Dateiliste mehrzeilig
+
+Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), dritter
+Bereich: Duplikate (`MainWindow.Duplicates.cs` vs.
+`ui-reference-pyside/genesis_ui/views/duplicates_view.py`, §21/
+ADR-0013). API-Ebene vorab separat verifiziert
+(`GenesisApiClient.GapK.cs`: `POST /duplicates/scan` mit `{kind}`-Body,
+`GET /duplicates?reviewed=true/false`, `POST /duplicates/{id}/review|
+unreview` — Parameter und DTO-Felder stimmen 1:1 mit
+`core/genesis_core/api/app.py`; Scope-Auswahl entspricht exakt
+`MEDIA_KIND_LABEL_KEYS` inkl. `podcast_episode`).
+
+**Befund 1 (Bug, behoben): Confidence-Anzeige war systemkulturabhängig.**
+`$"{confidence:P0}"` erzeugt unter deutschem Windows "87 %" (mit
+Leerzeichen), die Python-Referenz zeigt via `f"{confidence:.0%}"` immer
+"87%". Fix: neue WPF-freie Hilfsfunktion
+`DuplicatesSupport.FormatConfidence()` (Custom-Format `"0%"` mit
+`InvariantCulture`, inkl. Pythons "half to even"-Rundung bei exakt
+halben Werten: 0.875→"88%", 0.125→"12%"), abgesichert durch
+`DuplicatesSupportTests` (u.a. explizit unter erzwungener de-DE-Kultur).
+
+**Befund 2 (Parität, hergestellt): Reload nach fehlgeschlagenen
+Aktionen.** Die Python-Referenz lädt die Gruppenliste nach einem
+fehlgeschlagenen Scan bzw. Review/Unreview NICHT neu (frühe Rückkehr
+vor `self._reload()`); der WPF-Client lud trotzdem neu und vermischte
+die Fehlermeldung mit frischen Daten. Nach Scan-/Review-/Unreview-
+Fehler wird jetzt nicht mehr neu geladen.
+
+**Befund 3 (Parität, hergestellt): Mehrzeilige Dateiliste.** Die
+Python-Referenz zeigt alle Pfade einer Duplikatgruppe zeilenweise in
+der Zelle (`"\n".join(paths)` im QTreeWidget); die WPF-Textspalte
+zeigte nur die erste Zeile. Die Spalte ist jetzt eine
+`DataGridTemplateColumn` mit umbruchfähigem TextBlock (dasselbe
+`FrameworkElementFactory`-Muster wie die Thumbnail-/Format-Spalten der
+Medientabelle).
+
+**Bestätigt ohne Befund:** Kategorie-/Status-Label-Mapping inkl.
+Fallback auf den Rohwert, Filterkombobox-Reihenfolge (offen/geprüft/
+alle) mit True/False/Null-Semantik, Scan-Button-Sperrung während des
+Scans, Auswahlregeln (Markieren nur wenn nicht geprüft, Zurücksetzen
+nur wenn geprüft), `#id`-Fallback der Pfadauflösung bei
+API-Fehlern + Pfad-Cache, bewusst keine Löschfunktion (§21).
+**Bewusst beibehaltene Abweichung:** Bei nicht-leerer Trefferliste
+leert der WPF-Client die Statuszeile (verhindert veraltete
+Fehlermeldungen), während die Python-Referenz den letzten Statustext
+stehen lässt — die WPF-weite Konvention (`count == 0 ? no_results :
+leer`) wurde hier dem Einzelverhalten vorgezogen. Dialog-Anzeige bei
+API-Fehlern bleibt Gap L (systematisch).
+
+**Verifikation:** Wie zuvor kein `dotnet build`/`dotnet test` möglich
+(dot.net/NuGet in dieser Sandbox nicht erreichbar) — Ersatzprüfungen:
+Klammer-/Strukturcheck der geänderten Dateien (balanciert),
+Zeile-für-Zeile-Parity-Vergleich, Test-Erwartungswerte per Python-
+Laufzeitabgleich (`f"{0.875:.0%}"` → "88%" usw.). Windows-Build/
+Testlauf weiterhin nachzuholen.
+
 ## 2026-10-08 (Fortsetzung) - Tiefenprüfung Bibliotheks-Drill-down: Rendering 1:1 bestätigt, zwei Kleinstlücken geschlossen, neue systematische Lücke L dokumentiert
 
 Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), zweiter
@@ -113,7 +169,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-08 (Tiefenprüfung Medientabelle WPF↔Python: Player-Parität geschlossen, LUFS-Filter-Bug behoben — siehe oberster Eintrag)
+Letztes Update: 2026-10-08 (Tiefenprüfung Duplikate-Ansicht: Confidence-Locale-Bug behoben, Fehler-/Reload-Parität, mehrzeilige Dateiliste — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

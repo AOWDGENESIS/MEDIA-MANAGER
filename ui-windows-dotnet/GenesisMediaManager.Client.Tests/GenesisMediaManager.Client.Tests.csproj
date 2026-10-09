@@ -59,6 +59,10 @@
          ist ebenfalls WPF-frei und wird nach demselben Muster eingebunden
          (MediaPlayerSupportTests.cs). -->
     <Compile Include="..\GenesisMediaManager.Client\MediaPlayerSupport.cs" Link="MediaPlayerSupport.cs" />
+    <!-- DuplicatesSupport.cs (Confidence-Prozentformat der Duplikate-
+         Ansicht, §21) ebenfalls WPF-frei - eingebunden fuer
+         DuplicatesSupportTests.cs. -->
+    <Compile Include="..\GenesisMediaManager.Client\DuplicatesSupport.cs" Link="DuplicatesSupport.cs" />
   </ItemGroup>
 
 </Project>

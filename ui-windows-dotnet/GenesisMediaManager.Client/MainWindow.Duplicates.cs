@@ -68,9 +68,25 @@ public partial class MainWindow
         // aktiver Spaltensortierung die FALSCHE Duplikatgruppe markiert
         // werden. Gefunden im Deep-Search, behoben.
         var grid = new DataGrid { AutoGenerateColumns = false, IsReadOnly = true, SelectionMode = DataGridSelectionMode.Single, Margin = new Thickness(0, 8, 0, 0), MaxHeight = 420, CanUserSortColumns = false };
-        grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("duplicates_view.col_category"), Binding = new System.Windows.Data.Binding("Category"), Width = 180 });
-        grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("duplicates_view.col_confidence"), Binding = new System.Windows.Data.Binding("Confidence"), Width = 90 });
-        grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("duplicates_view.col_files"), Binding = new System.Windows.Data.Binding("Files"), Width = new DataGridLength(2, DataGridLengthUnitType.Star) });
+            grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("duplicates_view.col_category"), Binding = new System.Windows.Data.Binding("Category"), Width = 180 });
+            grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("duplicates_view.col_confidence"), Binding = new System.Windows.Data.Binding("Confidence"), Width = 90 });
+            // Die Dateiliste einer Gruppe enthaelt einen Pfad PRO Datei
+            // (zeilenweise getrennt, "\n".join(paths) in
+            // duplicates_view.py::_reload) - eine reine Textspalte wuerde
+            // nur die erste Zeile zeigen. Daher Template-Spalte mit
+            // umbruchfaehigem TextBlock (Paritaet zur mehrzeiligen
+            // QTreeWidget-Zelle der Python-Referenz; dasselbe
+            // FrameworkElementFactory-Muster wie die Thumbnail-/Format-
+            // Spalten in MainWindow.xaml.cs).
+            var filesCell = new FrameworkElementFactory(typeof(TextBlock));
+            filesCell.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("Files"));
+            filesCell.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
+            grid.Columns.Add(new DataGridTemplateColumn
+            {
+                Header = _tr.Tr("duplicates_view.col_files"),
+                CellTemplate = filesCell,
+                Width = new DataGridLength(2, DataGridLengthUnitType.Star),
+            });
         grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("duplicates_view.col_reason"), Binding = new System.Windows.Data.Binding("Reason"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("duplicates_view.col_status"), Binding = new System.Windows.Data.Binding("Status"), Width = 100 });
         root.Children.Add(grid);
@@ -126,7 +142,9 @@ public partial class MainWindow
                 rows.Add(new
                 {
                     Category = _tr.Tr(categoryKey),
-                    Confidence = $"{group.Confidence:P0}",
+                    // Invariantes "87%"-Format wie Pythons f"{confidence:.0%}"
+                    // (siehe DuplicatesSupport.FormatConfidence).
+                    Confidence = DuplicatesSupport.FormatConfidence(group.Confidence),
                     Files = string.Join(Environment.NewLine, paths),
                     group.Reason,
                     Status = _tr.Tr(group.Reviewed ? "duplicates_view.status_reviewed" : "duplicates_view.status_open"),
@@ -143,17 +161,23 @@ public partial class MainWindow
             var kind = DuplicateScopeOptions[scopeCombo.SelectedIndex].Kind;
             scanBtn.IsEnabled = false;
             statusText.Text = _tr.Tr("duplicates_view.scanning");
+            var scanSucceeded = false;
             try
             {
                 var found = await _api.ScanDuplicatesAsync(kind);
                 statusText.Text = _tr.Tr("duplicates_view.scan_done", ("count", found.Count));
+                scanSucceeded = true;
             }
             catch (Exception ex)
             {
                 statusText.Text = _tr.Tr("duplicates_view.scan_failed", ("error", ex.Message));
             }
             scanBtn.IsEnabled = true;
-            await ReloadAsync();
+            // Paritaet zu duplicates_view.py::_on_scan_clicked: Nach einem
+            // FEHLGESCHLAGENEN Scan wird die Liste NICHT neu geladen
+            // (Python kehrt dort vor self._reload() zurueck) - die
+            // Fehlermeldung bleibt unvermischt mit frischen Daten stehen.
+            if (scanSucceeded) await ReloadAsync();
         };
 
         reviewedCombo.SelectionChanged += async (_, _) => await ReloadAsync();
@@ -166,6 +190,11 @@ public partial class MainWindow
             unreviewBtn.IsEnabled = hasSelection && reviewed;
         };
 
+        // Paritaet zu duplicates_view.py::_on_mark_reviewed_clicked/
+        // _on_unreview_clicked: Nach einer FEHLGESCHLAGENEN Aenderung wird
+        // die Liste NICHT neu geladen (Python kehrt nach show_api_error
+        // zurueck, ohne self._reload() aufzurufen); die Fehlermeldung
+        // bleibt hier als Statustext sichtbar (Dialog-Anzeige ist Gap L).
         markReviewedBtn.Click += async (_, _) =>
         {
             if (grid.SelectedIndex < 0 || grid.SelectedIndex >= groups.Count) return;
@@ -176,6 +205,7 @@ public partial class MainWindow
             catch (Exception ex)
             {
                 statusText.Text = _tr.Tr("duplicates_view.review_failed", ("error", ex.Message));
+                return;
             }
             await ReloadAsync();
         };
@@ -189,6 +219,7 @@ public partial class MainWindow
             catch (Exception ex)
             {
                 statusText.Text = _tr.Tr("duplicates_view.review_failed", ("error", ex.Message));
+                return;
             }
             await ReloadAsync();
         };

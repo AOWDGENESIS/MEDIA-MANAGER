@@ -8,7 +8,7 @@ name: Windows-Installationspaket bauen
 on:
   workflow_dispatch: {}
   push:
-    branches: [main]
+    branches: [main, arena/b54df116-media-manager]  # Arbeitsbranch: Installer ohne Merge nach main bauen
     paths:
       - "deploy/**"
       - "ui-windows-dotnet/**"

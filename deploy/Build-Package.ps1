@@ -166,11 +166,11 @@ if ($BuildMsi) {
     wix build (Join-Path $PSScriptRoot "wix\Product.wxs") `
         -ext WixToolset.Util.wixext `
         -d ProductVersion=0.2.0.0 `
-        -d ClientSourceDir=(Join-Path $OutputDir "client") `
-        -d BackendSourceDir=(Join-Path $OutputDir "backend") `
-        -d I18nSourceDir=(Join-Path $OutputDir "i18n") `
-        -d InstallerSourceDir=(Join-Path $OutputDir "installer") `
-        -d StartScriptSource=(Join-Path $PSScriptRoot "installer\Install-GenesisMediaManager.ps1") `
+        -d "ClientSourceDir=$(Join-Path $OutputDir 'client')" `
+        -d "BackendSourceDir=$(Join-Path $OutputDir 'backend')" `
+        -d "I18nSourceDir=$(Join-Path $OutputDir 'i18n')" `
+        -d "InstallerSourceDir=$(Join-Path $OutputDir 'installer')" `
+        -d "StartScriptSource=$(Join-Path $PSScriptRoot 'installer\Install-GenesisMediaManager.ps1')" `
         -o $msiOut
     if ($LASTEXITCODE -ne 0) { throw "wix build fehlgeschlagen" }
     Write-Ok "MSI gebaut: $msiOut"

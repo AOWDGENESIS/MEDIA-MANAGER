@@ -36,7 +36,22 @@ jobs:
 
       - name: Paket bauen (ZIP + MSI)
         shell: pwsh
-        run: ./deploy/Build-Package.ps1 -BuildMsi
+        run: |
+          # Lauf protokollieren. Bei Fehlern werden die Fehlerzeilen als
+          # GitHub-Annotationen ausgegeben, damit sie ohne Log-Download sichtbar sind.
+          $log = Join-Path $env:RUNNER_TEMP "paketbau.log"
+          try {
+            ./deploy/Build-Package.ps1 -BuildMsi *>&1 | Tee-Object -FilePath $log
+          } catch {
+            $msg = ($_.Exception.Message -replace '[\r\n]+', ' ') -replace '%', '%25'
+            Write-Host "::error::$msg"
+            if (Test-Path $log) {
+              Select-String -Path $log -Pattern 'error' | Select-Object -Last 12 | ForEach-Object {
+                Write-Host ("::error::" + ($_.Line -replace '%', '%25'))
+              }
+            }
+            exit 1
+          }
 
       - name: ZIP als Artefakt hochladen
         uses: actions/upload-artifact@v4

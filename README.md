@@ -48,28 +48,26 @@ PYTHONPATH=../core python3 main.py
 ## Aktueller Stand
 
 Siehe [`PROGRESS.md`](PROGRESS.md) für den tagesaktuellen Fortschritt nach
-Phasen. Kurzfassung nach Sitzung 1 (Phase 1 „Foundation“, größtenteils
-abgeschlossen):
+Phasen. Kurzfassung (Stand 2026-10-09):
 
-- ✅ Vollständiges Datenbankschema (SQLite/SQLAlchemy) für alle in der
-  Spezifikation geforderten Entitäten
-- ✅ Rekursiver, read-only Media-Scanner mit Hashing, FFprobe-Technikanalyse,
-  Erkennung neuer/geänderter/vermisster Dateien
-- ✅ Konfigurationssystem mit datenschutzfreundlichen Defaults (offline, keine
-  Telemetrie, keine Cloud-KI)
-- ✅ Strukturiertes, rotierendes Logging
-- ✅ Job-Queue mit eindeutigen Job-IDs (Grundlage für Rollback)
-- ✅ Lokale REST-API (FastAPI) mit automatischer OpenAPI-Doku
-- ✅ Lokale KI-Anbindung über Ollama (getestet, Modell `qwen2.5:0.5b`)
-- ✅ PySide6-Referenz-UI: Dark Mode, vollständige Navigationsstruktur,
-  Dashboard mit echten Live-Daten, Medientabelle mit Detailansicht
-  (Screenshots: `docs/screenshot_dashboard.png`, `docs/screenshot_media_table.png`)
-- ✅ .NET/WPF-Windows-Client als vollständiges Quellcode-Grundgerüst
-  (Build/Test nur unter Windows möglich)
-- ✅ 16/16 automatisierte Tests grün (`scripts/run_tests.sh`)
+- ✅ Alle Entwicklungsphasen 1–10 umgesetzt; der Projektstand ist als
+  geprüftes v0.2.0-Review-Paket veröffentlicht (`CONTENTS.txt`/
+  `SHA256SUMS.txt`/`README_REVIEW_STATUS.txt` dokumentieren den
+  Review-Stand vom 2026-10-07 als Baseline-Snapshot).
+- ✅ Core: Datenbankschema, Scanner, Metadaten-/Audio-/Video-/Hörbuch-
+  Werkzeuge, Duplikat-Erkennung, KI-Zentrum, Voice Studio (TTS),
+  Download-/Import-Center, Jobs, Backups, Diagnose, Fehler-Center,
+  strukturiertes Logging, REST-API mit Token-Absicherung (§37-
+  Fehlerformat mit nachschlagbarer Fehler-ID).
+- ✅ PySide6-Referenz-UI: alle ~20 Ansichten/Dialoge, Dark Mode, vier
+  Sprachen (DE/EN/JA/RU).
+- ✅ .NET/WPF-Windows-Client: funktional vollständig zur Python-Referenz
+  (Parity-Arbeit abgeschlossen, Gaps A–L bearbeitet, alle §1–§54-Ansichten
+  tiefengeprüft — Details in `docs/GAP_ANALYSIS.md` Abschnitt 5 und
+  `PROGRESS.md` 2026-10-08/09). WPF-freie Hilfslogik ist im reinen
+  net8.0-Testprojekt mit ~208 Testfällen abgedeckt; der endgültige
+  Build-/Testlauf und die visuelle Abnahme erfolgen unter Windows.
 - ✅ Lizenz-Entwurf (`licenses/THIRD-PARTY-LICENSES.md`, Status: ENTWURF)
-- ⏳ Phasen 2–10 (Musik-Metadaten, Audio-Werkzeuge, Hörbücher, Video, KI-Suche,
-  Voice Studio, Download-Center, Hardening, Release) — offen, siehe Roadmap
 
 ## Grundprinzipien (nicht verhandelbar)
 

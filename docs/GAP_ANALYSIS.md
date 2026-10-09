@@ -723,18 +723,17 @@ gesamten Liste freigegeben ("mach es der reihe nach bis du fertig bist").
    eingeordnet und noch vor J/H abgearbeitet.)*
 6. ✅ **J** (Log-Viewer), **H** (Rest: Kontextmenü-Umbau) — **GESCHLOSSEN,
    Sitzung 14 (Fortsetzung 6).**
-7. 🟡 **K** (.NET-Parität) — **laufend, inkrementell** (Nutzerentscheidung,
-   Sitzung 14 Fortsetzung 7): seit Fortsetzung 14 hat JEDE der ~20
-   Python-Ansichten/-Dialoge (`ui-reference-pyside/genesis_ui/views/*.py`
-   + `dialogs/*.py`) ein .NET-Pendant, inklusive aller neun
-   Werkzeug-Dialoge der Medientabelle samt Kontextmenü/Werkzeugleisten-
-   Verdrahtung (siehe Siebter/Achter Schritt oben). Kein Showstopper mehr,
-   aber NOCH NICHT final "geschlossen": eine stichprobenartige
+7. ✅ **K** (.NET-Parität) — **ABGESCHLOSSEN (2026-10-09):** seit der
+   Sitzung 14 (Fortsetzung 7) hat JEDE der ~20 Python-Ansichten/-Dialoge
+   (`ui-reference-pyside/genesis_ui/views/*.py` + `dialogs/*.py`) ein
+   .NET-Pendant, inklusive aller neun Werkzeug-Dialoge der Medientabelle
+   samt Kontextmenü/Werkzeugleisten-Verdrahtung. Die stichprobenartige
    Tiefenprüfung jeder einzelnen .NET-Ansicht gegen ihre Python-Referenz
-   (insbesondere der zehn in Fortsetzung 13 nachträglich inventarisierten
-   Ansichten, die ohne eigenen Dokumentationseintrag entstanden) sowie die
-   vom Nutzer angeforderte Deep-Search/Review stehen noch aus (nächste
-   Sitzung).
+   und die Deep-Search/Review sind durchgeführt (alle §1-§54-Ansichten
+   Zeile-für-Zeile geprüft, mehrere Locale-Bugs und Paritätslücken
+   behoben), Gap L (§37-Fehlerdialoge) ist ebenfalls geschlossen —
+   Details in Abschnitt 5 und PROGRESS.md 2026-10-08/09. Verbleibende
+   Pflicht: Windows-Build/Testlauf und visuelle Abnahme.
 
 ## 5. Nachtrag 2026-10-08 — Stichprobenartige WPF-Tiefenprüfung (ABGESCHLOSSEN 2026-10-09)
 

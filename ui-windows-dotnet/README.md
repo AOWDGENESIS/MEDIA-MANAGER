@@ -70,6 +70,20 @@ Einstellungen-Abschnitte inkl. Medienordner-Listenverwaltung, siehe
 Schreib-Hilfslogik des `metadata`-Abschnitts der Metadaten-Provider-Seite,
 siehe `ProvidersViewSupport.cs`]).
 
+**Seither deutlich ausgebaut (Stand 2026-10-09):** Die Suite umfasst
+inzwischen 15 Testdateien mit 134 Testmethoden (~208 Testfälle inkl.
+Theory-Aufzählung): zusätzlich `MediaSearchFiltersTests` (Filter-Dialog-
+Suchlogik), `MediaFileActionsSupportTests` (Kontextmenü-/Toolbar-Aktionen),
+`MediaPlayerSupportTests` (Player-Parität), `LibraryBrowserSupportTests`
+(Bibliotheks-Drill-down), `DuplicatesSupportTests`,
+`DownloadCenterSupportTests`, `AiCenterSupportTests`,
+`VoiceStudioSupportTests`, `JobQueueSupportTests` und
+`ApiErrorSupportTests` (§37-Fehlerdialog-Textaufbau und -Parsing). Die
+seit Sitzung 14 hinzugekommenen Tests konnten in der Sandbox noch NICHT
+ausgeführt werden (dot.net/NuGet sind hier netzwerkseitig blockiert,
+deshalb ist seitdem kein SDK-Download/Build/Test möglich) - ihr Lauf ist
+Teil der nachzuholenden Windows-Verifikation (siehe PROGRESS.md).
+
 ## Voraussetzungen (unter Windows)
 
 - .NET 8 SDK oder neuer (https://dotnet.microsoft.com, MIT-lizenziert)
@@ -167,10 +181,20 @@ Artwork ab), Hauptfenster mit vollständiger Navigationsstruktur analog zu
   Download-/Import-Provider. Volle Parität zu
   `ui-reference-pyside/genesis_ui/views/providers_view.py`.
 
-Alle ~20 Python-Ansichten/-Dialoge haben damit ein .NET-Pendant. **Status:
-laufende, mehrsitzungsübergreifende Parity-Arbeit ("inkrementell",
-ausdrückliche Nutzerentscheidung, siehe `docs/GAP_ANALYSIS.md` Gap K) —
-NICHT als final abgeschlossen zu betrachten: eine stichprobenartige
-Tiefenprüfung jeder einzelnen Ansicht gegen ihre Python-Referenz sowie
-eine Deep-Search/Review auf Fehler stehen noch aus.** UI-Ausbau folgt
-weiter synchron zu den Entwicklungsphasen in `PROGRESS.md`.
+Alle ~20 Python-Ansichten/-Dialoge haben damit ein .NET-Pendant. **Status
+(2026-10-09): Parity-Arbeit ABGESCHLOSSEN.** Die stichprobenartige
+Tiefenprüfung jeder einzelnen .NET-Ansicht gegen ihre Python-Referenz
+(Gap K) ist beendet - ALLE §1-§54-Ansichten sind Zeile-für-Zeile geprüft,
+inklusive API-Ebene (Endpunkte/Payloads/DTO-Felder gegen
+`core/genesis_core/api/app.py`), und Gap L (§37-Fehlerdialoge mit
+Fehler-ID/Lösungshinweis an allen 35 `show_api_error`-Stellen) ist
+geschlossen; damit sind die dokumentierten Gaps A-L sämtlich bearbeitet.
+Befundliste und Fixes: `PROGRESS.md` 2026-10-08/2026-10-09 und
+`docs/GAP_ANALYSIS.md` Abschnitt 5. Wiederkehrendes Muster der Prüfung:
+.NET-Standardformate sind kulturabhängig, Python-f-Strings nicht - sieben
+Locale-Bugs wurden behoben und per InvariantCulture-Tests unter
+erzwungener de-DE-Kultur abgesichert. **Weiterhin nachzuholen (Windows-
+Seite):** `dotnet build -p:EnableWindowsTargeting=true`, `dotnet test`
+(inkl. der seit Sitzung 14 neu hinzugekommenen Tests) und eine visuelle
+Abnahme. UI-Ausbau folgt weiter synchron zu den Entwicklungsphasen in
+`PROGRESS.md`.

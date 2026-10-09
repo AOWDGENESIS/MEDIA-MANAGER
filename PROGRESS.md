@@ -1,4 +1,37 @@
 
+## 2026-10-09 (Fortsetzung 10) - Python-Testseite erstmals in der Sandbox ausgeführt: 558 Kern-Tests grün, keine Code-Befunde
+
+Bisher lief die Python-Testseite des Pakets nur auf der Referenz-Umgebung
+(TEST_REPORT.md); die Sandbox konnte sie mangels Abhängigkeiten nicht
+ausführen. Da `pypi.org`/`files.pythonhosted.org` erreichbar sind, wurde
+der Lauf jetzt nachgeholt (Installation via `pip install --user` in den
+snapshot-ausgenommenen Nutzerbereich — der Workspace selbst bleibt
+unverändert klein).
+
+**Ergebnis Core-Suite (`core/tests`, SAFE TEST MODE):**
+- Nach Installation der Kern-Abhängigkeiten (pytest, SQLAlchemy,
+  FastAPI, httpx, mutagen, PyYAML u.a.) und des statischen ffmpeg 7.0.2
+  (über das `imageio-ffmpeg`-Wheel von PyPI): **558 passed, 13 skipped,
+  7 failed**.
+- Die verbleibenden 7 Fehlschläge sind NACHWEISLICH umgebungsbedingt:
+  sie benötigen das `ffprobe`-Binary („ffprobe nicht gefunden -
+  technische Analyse wird uebersprungen“), das in dieser Sandbox nicht
+  beschaffbar ist (Download-Host blockiert, keine Systempaketverwaltung).
+  Vor der ffmpeg-Installation waren es 26 Fehlschläge + 3 Fehler
+  (Testmedienerzeugung) — alle allein durch das ffmpeg-Binary behoben.
+- **Kein einziger Fehlschlag zeigt auf einen Code-Defekt** — die
+  Python-Basis des Pakets bestätigt damit den Stand des TEST_REPORT.
+
+**Ergebnis PySide6-Referenz-UI:** `tests/test_i18n.py` (bewusst
+Qt-freier Logik-Test, §53/ADR-0009): **6/6 passed**. Die übrigen
+UI-Tests benötigen PySide6 (~500 MB) und bleiben der Windows-/CI-Umgebung
+vorbehalten.
+
+**Weiterhin offen (unverändert):** der .NET-Build/Testlauf
+(`dotnet build -p:EnableWindowsTargeting=true`, `dotnet test` mit den
+~208 Testfällen) und die visuelle Abnahme — in dieser Sandbox nicht
+möglich (dot.net/NuGet blockiert).
+
 ## 2026-10-09 (Fortsetzung 9) - Querschnitts-Audit: i18n-Kataloge und Platzhalter vollständig konsistent, keine Befunde
 
 Abschließendes skriptgestütztes Querschnitts-Audit über den gesamten
@@ -596,7 +629,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-09 (Querschnitts-Audit: i18n-Kataloge und Platzhalter vollständig konsistent, keine Befunde — siehe oberster Eintrag)
+Letztes Update: 2026-10-09 (Python-Testseite erstmals in der Sandbox ausgeführt: 558 Kern-Tests grün, restliche Fehlschläge rein umgebungsbedingt — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

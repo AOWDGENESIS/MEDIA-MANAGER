@@ -1,36 +1,49 @@
 
-## 2026-10-09 (Fortsetzung 10) - Python-Testseite erstmals in der Sandbox ausgeführt: 558 Kern-Tests grün, keine Code-Befunde
+## 2026-10-09 (Fortsetzung 10) - Python-Testseite in der Sandbox ausgeführt: 564 Kern-Tests grün, ein fpcalc-abhängiger Fehlschlag, keine Code-Befunde
 
-Bisher lief die Python-Testseite des Pakets nur auf der Referenz-Umgebung
-(TEST_REPORT.md); die Sandbox konnte sie mangels Abhängigkeiten nicht
-ausführen. Da `pypi.org`/`files.pythonhosted.org` erreichbar sind, wurde
-der Lauf jetzt nachgeholt (Installation via `pip install --user` in den
-snapshot-ausgenommenen Nutzerbereich — der Workspace selbst bleibt
-unverändert klein).
+Die Python-Testseite des Pakets war bisher in dieser Sandbox nicht ausführbar
+(fehlende Python-Abhängigkeiten und Systembinaries). Da `pypi.org`,
+`files.pythonhosted.org` und `registry.npmjs.org` erreichbar sind, wurde der
+Lauf nachgeholt. Installiert wurde ausschließlich im Nutzerbereich, nicht im
+Arbeitsbaum; nach dem Lauf wurden die Test-Werkzeuge wieder entfernt:
 
-**Ergebnis Core-Suite (`core/tests`, SAFE TEST MODE):**
-- Nach Installation der Kern-Abhängigkeiten (pytest, SQLAlchemy,
-  FastAPI, httpx, mutagen, PyYAML u.a.) und des statischen ffmpeg 7.0.2
-  (über das `imageio-ffmpeg`-Wheel von PyPI): **558 passed, 13 skipped,
-  7 failed**.
-- Die verbleibenden 7 Fehlschläge sind NACHWEISLICH umgebungsbedingt:
-  sie benötigen das `ffprobe`-Binary („ffprobe nicht gefunden -
-  technische Analyse wird uebersprungen“), das in dieser Sandbox nicht
-  beschaffbar ist (Download-Host blockiert, keine Systempaketverwaltung).
-  Vor der ffmpeg-Installation waren es 26 Fehlschläge + 3 Fehler
-  (Testmedienerzeugung) — alle allein durch das ffmpeg-Binary behoben.
-- **Kein einziger Fehlschlag zeigt auf einen Code-Defekt** — die
-  Python-Basis des Pakets bestätigt damit den Stand des TEST_REPORT.
+- Python-Abhängigkeiten laut `core/requirements.txt` (ohne PySide6): pytest,
+  SQLAlchemy, FastAPI, httpx, mutagen, PyYAML, python-multipart u. a.
+- `ffmpeg` 7.0.2 statisch über das PyPI-Wheel `imageio-ffmpeg`.
+- `ffprobe` 4.0.2 statisch (Linux x64) aus dem npm-Paket `ffprobe-static`
+  3.1.0; nur das Binary wurde extrahiert.
 
-**Ergebnis PySide6-Referenz-UI:** `tests/test_i18n.py` (bewusst
-Qt-freier Logik-Test, §53/ADR-0009): **6/6 passed**. Die übrigen
-UI-Tests benötigen PySide6 (~500 MB) und bleiben der Windows-/CI-Umgebung
-vorbehalten.
+**Ergebnis Core-Suite (`core/tests`, SAFE TEST MODE):** 564 bestanden,
+13 übersprungen, 1 fehlgeschlagen (578 gesammelt).
 
-**Weiterhin offen (unverändert):** der .NET-Build/Testlauf
-(`dotnet build -p:EnableWindowsTargeting=true`, `dotnet test` mit den
-~208 Testfällen) und die visuelle Abnahme — in dieser Sandbox nicht
-möglich (dot.net/NuGet blockiert).
+- `ffmpeg` aktiviert 114 zuvor übersprungene Tests und behebt 19 Fehlschläge
+  sowie 3 Fehler (Testmedienerzeugung). `ffprobe` behebt die sechs
+  ffprobe-abhängigen Fehlschläge (Kapitelerkennung, Kapitel-API,
+  Konvertierung, Schnittdauer, Schnitt mit Fades, Scanner-Technikdaten).
+- Der verbleibende Fehlschlag `test_download_engine.py::test_import_full_workflow_creates_media_file_and_source`
+  verlangt `fingerprint_computed == True`. Ohne `fpcalc` (Chromaprint)
+  überspringt die Engine die Fingerprint-Stufe mit Warnung. Das ist eine
+  Umgebungsabhängigkeit, kein Code-Defekt.
+- Die 13 Skips: `fpcalc` fehlt (5), keine lokalen Piper-Testmodelle (6),
+  Ollama nicht gestartet (1), kein Internetzugriff (1).
+- Abgleich mit TEST_REPORT.md (Referenzlauf: 571 bestanden / 7 übersprungen /
+  0 fehlgeschlagen): Die Gesamtzahl 578 stimmt überein. Die Abweichung in der
+  Verteilung erklärt sich durch fehlendes `fpcalc` (5 Skips und der
+  Fehlschlag oben) sowie einen netz- bzw. Ollama-abhängigen Skip:
+  564 + 6 + 1 = 571 und 13 − 6 = 7.
+- Kein Code-Defekt gefunden: Jeder Fehlschlag und jeder Skip wurde über seine
+  Fehlermeldung oder den Guard im Code einer Umgebungsabhängigkeit zugeordnet.
+  Beispiele: Der Scanner schreibt `TechnicalMetadata` nur bei erfolgreichem
+  ffprobe-Lauf (`scanner.py`, Guard `if raw is not None`); die Kapitel-API
+  bildet `ChapterDetectionError` auf HTTP 422 ab (`app.py`).
+
+**Ergebnis PySide6-Referenz-UI:** `tests/test_i18n.py` (bewusst Qt-frei,
+ADR-0001/ADR-0009): 6/6 bestanden. Die übrigen UI-Tests benötigen PySide6 und
+bleiben der Windows-/CI-Umgebung vorbehalten.
+
+**Weiterhin offen:** .NET-Build und .NET-Tests (`dotnet build
+-p:EnableWindowsTargeting=true`, `dotnet test`) sowie die visuelle Abnahme.
+Dazu fehlt in dieser Sandbox das .NET-SDK (dot.net und NuGet sind blockiert).
 
 ## 2026-10-09 (Fortsetzung 9) - Querschnitts-Audit: i18n-Kataloge und Platzhalter vollständig konsistent, keine Befunde
 
@@ -629,7 +642,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-09 (Python-Testseite erstmals in der Sandbox ausgeführt: 558 Kern-Tests grün, restliche Fehlschläge rein umgebungsbedingt — siehe oberster Eintrag)
+Letztes Update: 2026-10-09 (Python-Testseite in der Sandbox ausgeführt: 564 Kern-Tests grün, ein fpcalc-abhängiger Fehlschlag, keine Code-Befunde — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

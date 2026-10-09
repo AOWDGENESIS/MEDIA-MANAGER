@@ -1,4 +1,44 @@
 
+## 2026-10-09 (Fortsetzung 11) - Installationspaket über GitHub Actions gebaut: drei Build-Fehler behoben
+
+Ziel war eine installierbare Windows-Datei. Der Installer entsteht nur auf einem
+Windows-Runner (WiX/`dotnet publish -r win-x64`) und liegt daher nicht im Repo.
+Der Workflow `build-windows-installer.yml` existiert nur auf dem Arbeitsbranch,
+nicht auf `main`, und lässt sich deshalb dort nicht manuell starten. Der Workflow
+läuft jetzt zusätzlich bei Pushes auf diesen Branch (Eintrag in `branches:`).
+
+Verlauf der drei Läufe:
+
+1. **Lauf 37911012986 (Commit 13fbda6): fehlgeschlagen** - der WPF-Client ließ
+   sich nicht kompilieren (fünf C#-Fehler, seit früheren Sitzungen nie gebaut):
+   - `MainWindow.xaml.cs`: `new Thickness(16, 12)` - WPF kennt nur 1 oder 4 Werte (CS1501)
+   - `MainWindow.xaml.cs`: `UniformGrid` ohne `using System.Windows.Controls.Primitives` (CS0246)
+   - `MainWindow.xaml.cs`: `thumbnailCache` von der lokalen Funktion `LoadThumbnailAsync`
+     vor der Zuweisung erfasst (CS0165) - Deklaration nach oben verschoben
+   - `MainWindow.Duplicates.cs`: `FrameworkElementFactory` direkt als `CellTemplate` (CS0029) -
+     jetzt `DataTemplate` mit `VisualTree`
+   Behoben in Commit a576411.
+2. **Lauf 37911346061 (a576411): fehlgeschlagen** im Paketschritt. Ursache:
+   `deploy/Build-Package.ps1` übergab `-d ClientSourceDir=(Join-Path ...)` an `wix build`.
+   In PowerShell werden Klammerausdrücke mitten im Argument nicht ausgewertet, WiX bekam
+   kaputte Argumente. Behoben in Commit d3ecbb1 (`"Name=$(...)"`). Zusätzlich gibt der
+   Paketschritt Fehlerzeilen jetzt als GitHub-Annotationen aus, damit Fehler ohne
+   Log-Download sichtbar sind.
+3. **Lauf 37911647433 (d3ecbb1): erfolgreich** (`build in 2m1s`). Artefakte:
+   - `GenesisMediaManager-Setup-zip` (132,7 MB) - ZIP-Paket mit `start.bat`
+     (Installation ohne Adminrechte, Python 3.11+ vorausgesetzt)
+   - `GenesisMediaManager-Setup-msi` (59,7 MB) - klassisches MSI (Python 3.11+ vorausgesetzt)
+
+**Korrektur früherer Aussagen:** Die „geprüfte“ Quellcode-Zip vom selben Tag enthielt
+den nicht kompilierbaren Client. Die Aussagen zum .NET-Client waren damit zu weit
+gefasst. Der Client-Build ist jetzt durch CI belegt; die Installation und der Start
+auf einem Windows-Rechner sind **noch nicht getestet**.
+
+**Offen:**
+- Installationstest auf einem Windows-Rechner (ZIP und MSI) und visuelle Abnahme.
+- Entscheidung, ob der Push-Trigger für den Arbeitsbranch vor einem Merge nach `main`
+  entfernt wird.
+
 ## 2026-10-09 (Fortsetzung 10) - Python-Testseite in der Sandbox ausgeführt: 564 Kern-Tests grün, ein fpcalc-abhängiger Fehlschlag, keine Code-Befunde
 
 Die Python-Testseite des Pakets war bisher in dieser Sandbox nicht ausführbar
@@ -642,7 +682,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-09 (Python-Testseite in der Sandbox ausgeführt: 564 Kern-Tests grün, ein fpcalc-abhängiger Fehlschlag, keine Code-Befunde — siehe oberster Eintrag)
+Letztes Update: 2026-10-09 (Installationspaket über GitHub Actions gebaut: Lauf 37911647433 grün, drei Build-Fehler behoben — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

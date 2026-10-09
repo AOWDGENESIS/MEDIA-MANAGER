@@ -63,6 +63,10 @@
          Ansicht, §21) ebenfalls WPF-frei - eingebunden fuer
          DuplicatesSupportTests.cs. -->
     <Compile Include="..\GenesisMediaManager.Client\DuplicatesSupport.cs" Link="DuplicatesSupport.cs" />
+    <!-- DownloadCenterSupport.cs (Zeit-/Groessenformatierung und or-
+         Fallback-Idiom des Download-/Import-Centers, §30-§32) ebenfalls
+         WPF-frei - eingebunden fuer DownloadCenterSupportTests.cs. -->
+    <Compile Include="..\GenesisMediaManager.Client\DownloadCenterSupport.cs" Link="DownloadCenterSupport.cs" />
   </ItemGroup>
 
 </Project>

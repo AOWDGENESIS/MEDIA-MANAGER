@@ -1,4 +1,61 @@
 
+## 2026-10-08 (Fortsetzung 3) - Tiefenprüfung Download-/Import-Center: Locale-Bug in Größenanzeige behoben, Python-`or`-Fallback-Parität hergestellt
+
+Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), vierter
+Bereich: Download-/Import-Center (`MainWindow.DownloadCenter.cs` vs.
+`ui-reference-pyside/genesis_ui/views/download_center_view.py`,
+§30-§32/ADR-0019).
+
+**Befund 1 (Bug, behoben): Dateigrößen-Anzeige war systemkulturabhängig.**
+`$"{size:F1} {unit}"` erzeugt unter deutschem Windows "1,5 KB" statt
+"1.5 KB" — Pythons `f"{size:.1f}"` ist immer locale-unabhängig. Fix:
+Formatlogik in die neue WPF-freie `DownloadCenterSupport`-Klasse
+verschoben (`FormatSize` mit `InvariantCulture`), getestet in
+`DownloadCenterSupportTests` (u.a. unter erzwungener de-DE-Kultur).
+Dritter Befund dieser Klasse nach Confidence (Duplikate) — Muster:
+.NET-Interpolationsformate sind kulturabhängig, Python-f-Strings nicht.
+
+**Befund 2 (Parität, hergestellt): Python-`or`-Fallbacks.** Die
+Python-Referenz nutzt an sechs Stellen `x or fallback` (Verfügbarkeits-
+Grund, Metadaten-Titel/-Uploader/-Lizenz, Options-ID "default",
+Provider-Label "?") — das behandelt auch den LEERSTRING als "nicht
+vorhanden". Der WPF-Client nutzte `??`, das Leerstrings durchrutschen
+lässt. Überall auf die neue Hilfsfunktion
+`DownloadCenterSupport.OrFallback()` umgestellt (ebenfalls getestet).
+
+**Befund 3 (Parität, hergestellt): Options-Label-Fallback.** Fehlt das
+Label einer Download-Option, zeigt die Python-Referenz die Options-ID
+(`opt.get("label", opt.get("option_id", ""))`) — der WPF-Client band
+`o.Label` ohne Fallback. Jetzt `o.Label ?? o.OptionId`.
+
+**Befund 4 (Parität, hergestellt): `suggested_filename` nur im URL-Tab.**
+Die Python-Referenz protokolliert den vom Core gelieferten empfohlenen
+Dateinamen NUR beim URL-Import (`_report_import_result`), der lokale
+Import loggt bloß `import_done` + Warnungen. Der WPF-Client nutzte eine
+gemeinsame `ReportImportResult` und zeigte den Namen in BEIDEN Tabs.
+Jetzt per `includeSuggestedFilename`-Parameter getrennt (URL=true,
+lokal=false) — verifiziert in `core/genesis_core/download/engine.py`,
+dass der Core das Feld für beide Importwege füllt.
+
+**Bestätigt ohne Befund:** Zwei-Tab-Layout, Provider-Statusbanner
+(deaktiviert/aktiviert mit Anzeigenamen, rohe Fehlermeldung ohne
+tr()-Wrapper wie im Python-Vorbild), der §31-Stufenworkflow mit vier
+expliziten Knopfdrücken ohne Autoverkettung, Bestätigungspflicht VOR
+jedem Import (§56), "default"-Options-Fallback, Import-Ergebnisprotokoll-Basisfelder
+(job_id/media_id/Pfad, Warnungen mit "; "-Join), lokale Datei:
+Pfad-Pflicht + Durchsuchen + eigene Bestätigung, Dauerformatierung
+(Trunkierung statt Rundung wie Pythons `int()`), API-Endpunkte und
+DTO-Felder gegen
+`core/genesis_core/api/app.py` (`/download/providers|detect|availability|
+metadata|options|import`, `/import/local-file`). Dialog-Anzeige bei
+API-Fehlern bleibt Gap L (systematisch).
+
+**Verifikation:** Wie zuvor kein `dotnet build`/`dotnet test` möglich
+(dot.net/NuGet in dieser Sandbox nicht erreichbar) — Ersatzprüfungen:
+Klammer-/Strukturcheck (balanciert), Test-Erwartungswerte per
+Python-Laufzeitabgleich der Referenzfunktionen, Zeile-für-Zeile-
+Parity-Vergleich. Windows-Build/Testlauf weiterhin nachzuholen.
+
 ## 2026-10-08 (Fortsetzung 2) - Tiefenprüfung Duplikate-Ansicht: Locale-Bug bei Confidence-Anzeige behoben, Fehler-/Reload-Parität hergestellt, Dateiliste mehrzeilig
 
 Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), dritter
@@ -169,7 +226,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-08 (Tiefenprüfung Duplikate-Ansicht: Confidence-Locale-Bug behoben, Fehler-/Reload-Parität, mehrzeilige Dateiliste — siehe oberster Eintrag)
+Letztes Update: 2026-10-08 (Tiefenprüfung Download-/Import-Center: Größen-Locale-Bug behoben, Python-or-Fallback-Parität — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

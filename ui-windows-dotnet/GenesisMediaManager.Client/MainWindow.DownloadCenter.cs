@@ -129,25 +129,9 @@ public partial class MainWindow
             return url;
         }
 
-        static string FormatDuration(double? seconds, string unknown)
-        {
-            if (seconds is null) return unknown;
-            var total = (int)seconds.Value;
-            var h = total / 3600; var m = total % 3600 / 60; var s = total % 60;
-            return h > 0 ? $"{h}:{m:D2}:{s:D2}" : $"{m}:{s:D2}";
-        }
-
-        static string FormatSize(long? numBytes)
-        {
-            if (numBytes is null or 0) return "-";
-            double size = numBytes.Value;
-            foreach (var unit in new[] { "B", "KB", "MB" })
-            {
-                if (size < 1024) return $"{size:F1} {unit}";
-                size /= 1024;
-            }
-            return $"{size:F1} GB";
-        }
+        // FormatDuration/FormatSize liegen jetzt WPF-frei in
+        // DownloadCenterSupport.cs (testbar, InvariantCulture - Pendant zu
+        // _format_duration/_format_size in download_center_view.py).
 
         detectBtn.Click += async (_, _) =>
         {
@@ -175,9 +159,11 @@ public partial class MainWindow
             try
             {
                 var result = await _api.CheckDownloadAvailabilityAsync(url);
+                // OrFallback statt ?? - Paritaet zu Pythons
+                // `result.get("reason") or "-"` (auch Leerstring -> "-").
                 Log(urlLog, result?.Available == true
                     ? _tr.Tr("download_center.availability_available")
-                    : _tr.Tr("download_center.availability_unavailable", ("reason", result?.Reason ?? "-")));
+                    : _tr.Tr("download_center.availability_unavailable", ("reason", DownloadCenterSupport.OrFallback(result?.Reason, "-"))));
             }
             catch (Exception ex)
             {
@@ -194,10 +180,12 @@ public partial class MainWindow
             {
                 var meta = await _api.FetchDownloadMetadataAsync(url);
                 var unknown = _tr.Tr("download_center.metadata_unknown");
-                Log(urlLog, _tr.Tr("download_center.metadata_title", ("title", meta?.Title ?? unknown)));
-                Log(urlLog, _tr.Tr("download_center.metadata_uploader", ("uploader", meta?.Uploader ?? unknown)));
-                Log(urlLog, _tr.Tr("download_center.metadata_duration", ("duration", FormatDuration(meta?.DurationSeconds, unknown))));
-                Log(urlLog, _tr.Tr("download_center.metadata_license", ("license", meta?.License ?? unknown)));
+                // OrFallback statt ?? - Paritaet zu Pythons
+                // `meta.get("title") or unknown` (auch Leerstring -> unknown).
+                Log(urlLog, _tr.Tr("download_center.metadata_title", ("title", DownloadCenterSupport.OrFallback(meta?.Title, unknown))));
+                Log(urlLog, _tr.Tr("download_center.metadata_uploader", ("uploader", DownloadCenterSupport.OrFallback(meta?.Uploader, unknown))));
+                Log(urlLog, _tr.Tr("download_center.metadata_duration", ("duration", DownloadCenterSupport.FormatDuration(meta?.DurationSeconds, unknown))));
+                Log(urlLog, _tr.Tr("download_center.metadata_license", ("license", DownloadCenterSupport.OrFallback(meta?.License, unknown))));
             }
             catch (Exception ex)
             {
@@ -220,7 +208,10 @@ public partial class MainWindow
                     Log(urlLog, _tr.Tr("download_center.options_none"));
                     return;
                 }
-                optionsGrid.ItemsSource = lastOptions.Select(o => new { Label = o.Label, SizeText = FormatSize(o.ApproxSizeBytes), o.OptionId }).ToList();
+                // Label-Fallback Paritaet zu Pythons
+                // opt.get("label", opt.get("option_id", "")): fehlt das
+                // Label, wird die Options-ID angezeigt.
+                optionsGrid.ItemsSource = lastOptions.Select(o => new { Label = o.Label ?? o.OptionId, SizeText = DownloadCenterSupport.FormatSize(o.ApproxSizeBytes), o.OptionId }).ToList();
                 if (optionsGrid.Items.Count > 0) optionsGrid.SelectedIndex = 0;
             }
             catch (Exception ex)
@@ -239,16 +230,20 @@ public partial class MainWindow
         {
             var url = CurrentUrl();
             if (url is null) return;
-            var optionId = selectedOptionId ?? "default";
+            // OrFallback statt ?? - Paritaet zu Pythons
+            // `self._selected_option_id or "default"` bzw.
+            // `self._detected_provider or "?"` (auch Leerstring -> Fallback).
+            var optionId = DownloadCenterSupport.OrFallback(selectedOptionId, "default");
+            var providerLabel = DownloadCenterSupport.OrFallback(detectedProvider, "?");
             var confirmResult = MessageBox.Show(
-                _tr.Tr("download_center.confirm_import_text", ("url", url), ("provider", detectedProvider ?? "?"), ("option", optionId)),
+                _tr.Tr("download_center.confirm_import_text", ("url", url), ("provider", providerLabel), ("option", optionId)),
                 _tr.Tr("download_center.confirm_import_title"), MessageBoxButton.YesNo);
             if (confirmResult != MessageBoxResult.Yes) return;
             Log(urlLog, _tr.Tr("download_center.import_running"));
             try
             {
                 var result = await _api.ImportDownloadAsync(url, optionId, true);
-                ReportImportResult(urlLog, result);
+                ReportImportResult(urlLog, result, includeSuggestedFilename: true);
             }
             catch (Exception ex)
             {
@@ -277,7 +272,12 @@ public partial class MainWindow
             try
             {
                 var result = await _api.ImportLocalFileAsync(path, true);
-                ReportImportResult(localLog, result);
+                // Paritaet zu download_center_view.py::_on_local_import_clicked:
+                // der lokale Import protokolliert NUR import_done + Warnungen,
+                // NICHT den vorgeschlagenen Dateinamen (der ist dem
+                // URL-Import vorbehalten, auch wenn der Core ihn fuer beide
+                // Wege liefert).
+                ReportImportResult(localLog, result, includeSuggestedFilename: false);
             }
             catch (Exception ex)
             {
@@ -285,7 +285,7 @@ public partial class MainWindow
             }
         };
 
-        void ReportImportResult(TextBox log, DownloadImportResult? result)
+        void ReportImportResult(TextBox log, DownloadImportResult? result, bool includeSuggestedFilename)
         {
             Log(log, _tr.Tr(
                 "download_center.import_done",
@@ -295,7 +295,7 @@ public partial class MainWindow
             {
                 Log(log, _tr.Tr("download_center.import_warnings", ("warnings", string.Join("; ", result.Warnings))));
             }
-            if (!string.IsNullOrEmpty(result?.SuggestedFilename))
+            if (includeSuggestedFilename && !string.IsNullOrEmpty(result?.SuggestedFilename))
             {
                 Log(log, _tr.Tr("download_center.suggested_filename", ("name", result.SuggestedFilename)));
             }

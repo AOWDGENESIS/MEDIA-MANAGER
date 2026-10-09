@@ -1,4 +1,34 @@
 
+## 2026-10-09 (Fortsetzung 9) - Querschnitts-Audit: i18n-Kataloge und Platzhalter vollständig konsistent, keine Befunde
+
+Abschließendes skriptgestütztes Querschnitts-Audit über den gesamten
+WPF-Client und die vier geteilten i18n-Kataloge (DE/EN/JA/RU) — die
+drei Prüfungen, die bei den ansichtsweisen Tiefenprüfungen bisher nur
+stichprobenartig mitliefen:
+
+1. **Schlüssel-Existenz (WPF → Kataloge):** alle 655 im WPF-Client per
+   `Tr(...)` referenzierten Schlüssel existieren in allen vier
+   Sprachdateien. Der Translator-Fallback (Zielsprache → EN → DE →
+   Rohschlüssel) würde fehlende Schlüssel sonst still durchreichen —
+   das wäre ein Verstoß gegen §37 („keine stillen Fehlschläge“).
+2. **Katalog-Deckung (Katalog ↔ Katalog):** die Union aller vier
+   Kataloge umfasst 921 Schlüssel; jeder Schlüssel ist in jeder Sprache
+   vorhanden, keine leeren Übersetzungswerte.
+3. **Platzhalter-Konsistenz (Code ↔ Templates):** alle 181
+   `Tr`-Aufrufe mit benannten Argumenten wurden gegen die
+   `{platzhalter}` ihrer Templates abgeglichen — keine Abweichung.
+   (Zwei anfängliche Skript-Fehlalarme entpuppten sich als korrekt
+   escaped `{{...}}`-Literale im Umbenennen-Dialog und als
+   mehrzeilige Aufrufe, die der erste einfache Regex nicht erfasste;
+   der finale klammer-balancierte Scanner meldet null echte Befunde.)
+
+Ergänzend: statisches Gegenlesen aller in Fortsetzung 5–8 geänderten
+Codebereiche (Translator-Formatspec-Parsing, ApiErrorDetailHandler,
+ShowApiError, Dashboard-Refresh, Einstellungen-/Provider-Speicherfluss
+mit Pending-Status) — Struktur/Klammern/csproj-Links (17 eingebundene
+WPF-freie Quellen) ohne Auffälligkeiten. Weiterhin gilt: der
+Windows-Build/Testlauf ist die verbleibende Pflichtverifikation.
+
 ## 2026-10-09 (Fortsetzung 8) - Nachprüfung Dashboard/Einstellungen/Provider: fehlendes Embedding-Modell-Feld, Locale-Bug Nr. 8 und Reihenfolge-Lücken behoben
 
 Abschließende Tiefenprüfung der drei Ansichten, die in den bisherigen
@@ -566,7 +596,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-09 (Nachprüfung Dashboard/Einstellungen/Provider: fehlendes Embedding-Modell-Feld, Locale-Bug Nr. 8 und Reihenfolge-Lücken behoben — siehe oberster Eintrag)
+Letztes Update: 2026-10-09 (Querschnitts-Audit: i18n-Kataloge und Platzhalter vollständig konsistent, keine Befunde — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

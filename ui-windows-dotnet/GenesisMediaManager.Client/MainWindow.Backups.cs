@@ -68,9 +68,21 @@ public partial class MainWindow
                 backups = await _api.ListBackupsAsync();
                 grid.ItemsSource = backups.Select(b => new
                 {
-                    b.Id, b.BackupType, b.CreatedAt, b.Path, SizeText = FormatSize(b.SizeBytes),
+                    b.Id, b.BackupType,
+                    // Python: backup["created_at"] or "-" (leer/null -> "-").
+                    CreatedAt = DownloadCenterSupport.OrFallback(b.CreatedAt, "-"),
+                    b.Path,
+                    // DownloadCenterSupport.FormatSize ist das exakte Pendant
+                    // zu _format_size() in backups_view.py (und damit auch zu
+                    // download_center_view.py) - InvariantCulture statt des
+                    // vorherigen lokalen, kulturabhaengigen F1-Formats.
+                    SizeText = DownloadCenterSupport.FormatSize(b.SizeBytes),
                 }).ToList();
-                statusText.Text = backups.Count == 0 ? _tr.Tr("backups_view.no_backups") : string.Empty;
+                // Python setzt den Status NUR bei leerer Liste zurueck -
+                // Erfolgsrueckmeldungen (create_done/restore_done) bleiben
+                // nach dem Neuladen sichtbar stehen. Das vorherige
+                // ": string.Empty" loeschte sie sofort wieder.
+                if (backups.Count == 0) statusText.Text = _tr.Tr("backups_view.no_backups");
             }
             catch (Exception ex)
             {
@@ -131,17 +143,5 @@ public partial class MainWindow
         };
 
         await ReloadAsync();
-    }
-
-    private static string FormatSize(long? sizeBytes)
-    {
-        if (sizeBytes is null or 0) return "-";
-        double value = sizeBytes.Value;
-        foreach (var unit in new[] { "B", "KB", "MB" })
-        {
-            if (value < 1024) return $"{value:F1} {unit}";
-            value /= 1024;
-        }
-        return $"{value:F1} GB";
     }
 }

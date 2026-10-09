@@ -74,6 +74,10 @@
          Studios, §28/§29) ebenfalls WPF-frei - eingebunden fuer
          VoiceStudioSupportTests.cs. -->
     <Compile Include="..\GenesisMediaManager.Client\VoiceStudioSupport.cs" Link="VoiceStudioSupport.cs" />
+    <!-- JobQueueSupport.cs (Fortschrittsformat der Job-Warteschlange,
+         §35/§36) ebenfalls WPF-frei - eingebunden fuer
+         JobQueueSupportTests.cs. -->
+    <Compile Include="..\GenesisMediaManager.Client\JobQueueSupport.cs" Link="JobQueueSupport.cs" />
   </ItemGroup>
 
 </Project>

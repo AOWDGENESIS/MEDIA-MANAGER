@@ -14,6 +14,7 @@ namespace GenesisMediaManager.Client;
 public partial class MainWindow
 {
     private static readonly string[] LogLevelChoices = { "", "TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL" };
+    private static readonly string[] FirstLineSeparators = { "\r\n", "\n", "\r" };
     private const int LogPageSize = 200;
 
     private async Task ShowLogViewerAsync()
@@ -97,7 +98,12 @@ public partial class MainWindow
             grid.ItemsSource = currentItems.Select(e => new
             {
                 e.Timestamp, e.Level, Component = e.Component.Trim(),
-                FirstLine = string.IsNullOrEmpty(e.Message) ? string.Empty : e.Message.Split('\n')[0],
+                // Python nutzt splitlines()[0] - trennt an \n, \r\n UND \r.
+                // Ein reines Split('\n') liesse \r-Reste stehen und wuerde
+                // bei \r-Zeilenumbruechen die ganze Meldung zeigen.
+                FirstLine = string.IsNullOrEmpty(e.Message)
+                    ? string.Empty
+                    : e.Message.Split(FirstLineSeparators, StringSplitOptions.None)[0],
             }).ToList();
 
             var shownFrom = currentItems.Count > 0 ? offset + 1 : 0;

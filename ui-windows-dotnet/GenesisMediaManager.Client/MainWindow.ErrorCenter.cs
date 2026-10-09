@@ -63,10 +63,12 @@ public partial class MainWindow
                 return;
             }
             var error = errors[grid.SelectedIndex];
+            // OrFallback statt ?? - Python nutzt hier "or" (leerer String
+            // wird ebenfalls zu "-", error_center_view.py::_on_selection_changed).
             var lines = new List<string>
             {
-                _tr.Tr("error_center_view.detail_solution", ("hint", error.SolutionHint ?? "-")),
-                _tr.Tr("error_center_view.detail_technical", ("details", error.TechnicalDetails ?? "-")),
+                _tr.Tr("error_center_view.detail_solution", ("hint", DownloadCenterSupport.OrFallback(error.SolutionHint, "-"))),
+                _tr.Tr("error_center_view.detail_technical", ("details", DownloadCenterSupport.OrFallback(error.TechnicalDetails, "-"))),
             };
             if (!string.IsNullOrEmpty(error.FilePath))
             {
@@ -83,7 +85,11 @@ public partial class MainWindow
                 errors = await _api.ListErrorsAsync(200, unresolvedOnly.IsChecked == true);
                 grid.ItemsSource = errors.Select(e => new
                 {
-                    e.ErrorId, Timestamp = e.Timestamp ?? "-", Component = e.Component ?? "-", e.Message,
+                    e.ErrorId,
+                    // OrFallback statt ?? - Python: error["timestamp"] or "-".
+                    Timestamp = DownloadCenterSupport.OrFallback(e.Timestamp, "-"),
+                    Component = DownloadCenterSupport.OrFallback(e.Component, "-"),
+                    e.Message,
                     ResolvedText = _tr.Tr(e.Resolved ? "error_center_view.status_resolved" : "error_center_view.status_open"),
                 }).ToList();
                 statusText.Text = errors.Count == 0 ? _tr.Tr("error_center_view.no_errors") : string.Empty;

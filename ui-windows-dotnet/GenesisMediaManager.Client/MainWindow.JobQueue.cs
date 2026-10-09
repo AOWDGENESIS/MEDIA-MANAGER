@@ -102,7 +102,8 @@ public partial class MainWindow
                 cancelBtn.IsEnabled = false;
                 return;
             }
-            currentItemText.Text = _tr.Tr("job_queue_view.current_item_label", ("item", job.CurrentItem ?? "-"));
+            currentItemText.Text = _tr.Tr("job_queue_view.current_item_label",
+                ("item", DownloadCenterSupport.OrFallback(job.CurrentItem, "-")));
             var total = job.TotalItems ?? 0;
             var processed = job.ProcessedItems ?? 0;
             if (total > 0)
@@ -128,17 +129,25 @@ public partial class MainWindow
             {
                 var jobs = await _api.ListJobsAsync(100);
                 jobsById = jobs.ToDictionary(j => j.Id);
-                grid.ItemsSource = jobs.Select(j =>
+                var rows = jobs.Select(j =>
                 {
                     var total = j.TotalItems ?? 0;
                     var processed = j.ProcessedItems ?? 0;
-                    var progressText = total > 0
-                        ? $"{processed}/{total} ({(double)processed / total:P0})"
-                        : _tr.Tr("job_queue_view.progress_unknown");
                     return new JobQueueRow(
                         j.Id, j.JobType, _tr.Tr(JobStatusKeys.TryGetValue(j.Status, out var sk) ? sk : j.Status),
-                        progressText, j.ErrorCount, j.WarningCount, j.CreatedAt ?? "-");
+                        JobQueueSupport.FormatProgressText(processed, total, _tr.Tr("job_queue_view.progress_unknown")),
+                        j.ErrorCount, j.WarningCount,
+                        // OrFallback statt ?? - Python nutzt hier "or"
+                        // (leerer String wird ebenfalls zu "-").
+                        DownloadCenterSupport.OrFallback(j.CreatedAt, "-"));
                 }).ToList();
+                grid.ItemsSource = rows;
+                // Python stellt die Auswahl nach jedem Reload wieder her
+                // (setCurrentItem auf die zuvor gewaehlte Job-Id) - ohne
+                // das wuerde die DataGrid-Auswahl bei der automatischen
+                // 2-Sekunden-Aktualisierung staendig wegspringen.
+                var restoreRow = rows.FirstOrDefault(r => r.Id == previouslySelected);
+                if (restoreRow is not null) grid.SelectedItem = restoreRow;
                 statusText.Text = jobs.Count == 0 ? _tr.Tr("job_queue_view.no_jobs") : string.Empty;
             }
             catch (Exception ex)

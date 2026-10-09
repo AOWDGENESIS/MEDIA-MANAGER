@@ -38,7 +38,11 @@ public partial class MainWindow
             grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr(headerKey), Binding = new System.Windows.Data.Binding(path), Width = width });
         Col("plugins_view.col_id", "PluginId");
         Col("plugins_view.col_kind", "PluginKind");
-        Col("plugins_view.col_name", "DisplayName", 180);
+        // Python streckt die Namensspalte (setSectionResizeMode(2, Stretch));
+        // die Statusspalte bekommt ZUSAETZLICH Star-Breite, damit die
+        // Klartext-load_error-Meldungen (§34 "kaputte Plugins sichtbar
+        // machen") nicht abgeschnitten werden.
+        grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("plugins_view.col_name"), Binding = new System.Windows.Data.Binding("DisplayName"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
         Col("plugins_view.col_version", "Version", 90);
         Col("plugins_view.col_author", "Author", 140);
         Col("plugins_view.col_license", "License", 110);
@@ -52,12 +56,15 @@ public partial class MainWindow
             dirText.Text = _tr.Tr("plugins_view.plugins_dir_label", ("path", result.PluginsDir));
             grid.ItemsSource = result.Plugins.Select(p => new
             {
-                PluginId = p.PluginId ?? "-",
-                PluginKind = p.PluginKind ?? "-",
-                DisplayName = p.DisplayName ?? "-",
-                Version = p.Version ?? "-",
-                Author = p.Author ?? "-",
-                License = p.License ?? "-",
+                // OrFallback statt ?? - Python nutzt hier durchgaengig "or"
+                // (plugin["author"] or "-"), d.h. auch der LEERSTRING wird
+                // zu "-" (Paritaets-Idiom aus DownloadCenterSupport).
+                PluginId = DownloadCenterSupport.OrFallback(p.PluginId, "-"),
+                PluginKind = DownloadCenterSupport.OrFallback(p.PluginKind, "-"),
+                DisplayName = DownloadCenterSupport.OrFallback(p.DisplayName, "-"),
+                Version = DownloadCenterSupport.OrFallback(p.Version, "-"),
+                Author = DownloadCenterSupport.OrFallback(p.Author, "-"),
+                License = DownloadCenterSupport.OrFallback(p.License, "-"),
                 StatusText = BuildStatusText(p),
             }).ToList();
             statusText.Text = result.Plugins.Count == 0 ? _tr.Tr("plugins_view.no_plugins") : string.Empty;

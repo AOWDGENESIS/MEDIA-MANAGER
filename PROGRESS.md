@@ -1,4 +1,97 @@
 
+## 2026-10-09 (Fortsetzung 6) - Tiefenprüfung der restlichen sechs Ansichten: Locale-Bug Nr. 6, JobQueue- und Backups-Parität hergestellt
+
+Abschluss der stichprobenartigen WPF-Tiefenprüfung (Gap K) für die
+verbleibenden Ansichten: Plugins (§34), Log-Viewer (§54), Backups
+(§40), Diagnose (§38), Job-Warteschlange (§35/§36) und Fehler-Center
+(§37) — jeweils Zeile-für-Zeile gegen die Python-Referenz
+(`ui-reference-pyside/genesis_ui/views/*.py`), inklusive API-Ebene
+(Endpunkte, Parameter, DTO-Felder gegen `core/genesis_core/api/app.py`).
+
+**Befund 1 (Bug, behoben): Locale-Bug Nr. 6 in der Job-Warteschlange.**
+Der Fortschrittstext nutzte das Standardformat `P0` — unter deutschem
+Windows "42 %" statt Pythons "42%" (`:.0%` ist locale-unabhängig und
+setzt kein Leerzeichen). Fix: neue WPF-freie
+`JobQueueSupport.FormatProgressText()`, die den Prozentanteil über das
+bewährte `AiCenterSupport.FormatScore()` ("0%", InvariantCulture,
+half-to-even) bildet; getestet in `JobQueueSupportTests` (u.a.
+erzwungene de-DE-Kultur und 12.5%→"12%").
+
+**Befund 2 (Bug, behoben): Backups-Größenformat dupliziert und
+kulturabhängig.** `MainWindow.Backups` hatte eine eigene `FormatSize()`
+mit kulturabhängigem `F1`. Die Python-Referenz der Backups-Ansicht ist
+dieselbe `_format_size()` wie im Download-Center — die Ansicht nutzt
+jetzt das bereits getestete `DownloadCenterSupport.FormatSize()`
+(InvariantCulture), die Dublette ist entfernt.
+
+**Befund 3 (Parität, hergestellt): Python-`or`-Fallbacks in vier
+Ansichten.** `x or fallback` behandelt auch den Leerstring als
+"nicht vorhanden"; der WPF-Code nutzte `??`. Umgestellt auf
+`DownloadCenterSupport.OrFallback()` bei: Plugins (sechs
+Manifest-Felder), Job-Warteschlange (`created_at`, `current_item`),
+Backups (`created_at`), Fehler-Center (`timestamp`, `component`,
+`solution_hint`, `technical_details`).
+
+**Befund 4 (Parität, hergestellt): Job-Auswahl springt nicht mehr weg.**
+Python stellt die Tree-Auswahl nach jedem Reload wieder her
+(`setCurrentItem` auf die zuvor gewählte Job-Id); im WPF-Client wurde
+die DataGrid-Auswahl bei der automatischen 2-Sekunden-Aktualisierung
+jedes Mal gelöscht. Fix: Zeile mit derselben Job-Id nach dem Neuladen
+wieder auswählen.
+
+**Befund 5 (Parität, hergestellt): Log-Viewer-Zeilenumbrüche.**
+Python nutzt `splitlines()[0]` (trennt an `\n`, `\r\n` UND `\r`); der
+WPF-Code splittete nur an `\n`, ließ also `\r`-Reste stehen und zeigte
+bei `\r`-Umbrüchen die ganze Meldung. Fix: Split an allen drei
+Separatoren.
+
+**Befund 6 (Parität, hergestellt): Backups-Erfolgsmeldung blieb nicht
+stehen.** Python setzt den Status beim Neuladen NUR bei leerer Liste
+zurück, sodass `create_done`/`restore_done` sichtbar bleiben; WPF
+löschte die Meldung sofort wieder. Fix: Verhalten der Referenz
+übernommen.
+
+**Befund 7 (Parität, hergestellt): Plugins-Spaltenbreiten.** Python
+streckt die Namensspalte; WPF streckte nur die Statusspalte. Jetzt
+bekommt die Namensspalte Star-Breite wie in der Referenz, die
+Statusspalte behält zusätzlich Star-Breite, damit die §34-Klartext-
+`load_error`-Meldungen nicht abgeschnitten werden.
+
+**Bestätigt ohne Befund:** Plugins (Titel/Hinweis/Neu-laden-Flow,
+Sieben-Spalten-Grid, Status "geladen/fehlgeschlagen: Fehlermeldung",
+`no_plugins`-Leerzustand, API: `GET /plugins`, `POST /plugins/reload`,
+alle elf `plugin_to_dict`-Felder im DTO); Log-Viewer (Level-Filter mit
+"beliebig" an erster Stelle, Enter-Auslösung in beiden Suchfeldern,
+Erste-Seite-Reset bei Filteränderung §57, Paginierung 200er-Schritte
+mit Vor/Zurück-Freischaltung, `shown_from/shown_to/total`-Status,
+Detailanzeige der vollen Meldung bei Auswahl, API: `GET /logs` mit
+limit/offset/level/component/search); Backups (Erstellen ohne
+Bestätigung, Wiederherstellen mit Bestätigung Default No, fünf
+Spalten inkl. Pfad-Stretch, API: `GET /backup`, `POST /backup/db`,
+`POST /backup/config`, `POST /backup/{id}/restore` mit `{confirm}`);
+Diagnose (Laufen-Status mit deaktiviertem Button, Gesamtstatus-Zeile
+mit `generated_at`, Statusschlüssel-Fallback auf den Rohwert, API:
+`GET /diagnostics` mit overall_status/generated_at/checks);
+Job-Warteschlange (Sechs-Status-Schlüsselmap, aktive Statusmenge für
+Abbrechen, Pause-nur-bei-running/Fortsetzen-nur-bei-paused,
+Abbrechen-Bestätigung Default No, unbestimmter Fortschrittsbalken bei
+unbekannter Gesamtmenge, 2-Sekunden-Timer mit Stopp beim
+Seitenwechsel, API: `GET /jobs`, `POST /jobs/{id}/pause|resume|cancel`);
+Fehler-Center (Checkbox "nur offene" Default an, Fünf-Spalten-Grid,
+Detailzeilen Lösungshinweis/technische Details/optionaler Dateipfad,
+Lösen-Button nur bei ungelösten Einträgen, API: `GET /errors`,
+`POST /errors/{id}/resolve`). Verbleibende systematische Abweichung
+(alle Ansichten): API-Fehler zeigt die Python-Referenz als
+`show_api_error`-Dialog mit §37-`error_id`/`solution_hint`, WPF setzt
+Statuszeilentext — das ist der dokumentierte Gap L (eigener
+Arbeitsabschnitt).
+
+**Verifikation:** Wie zuvor kein `dotnet build`/`dotnet test` möglich
+(dot.net/NuGet in dieser Sandbox nicht erreichbar) — Ersatzprüfungen:
+Klammer-/Strukturcheck (balanciert), Zeile-für-Zeile-Parity-Vergleich.
+Windows-Build/Testlauf weiterhin nachzuholen. Damit sind ALLE
+§1-§54-Ansichten tiefengeprüft (Gap K vollständig).
+
 ## 2026-10-09 (Fortsetzung 5) - Tiefenprüfung Voice Studio: Locale-Bug Nr. 5, Formatspec-Support im Translator und Paritätslücken behoben
 
 Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), sechster
@@ -349,7 +442,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-09 (Tiefenprüfung Voice Studio: Locale-Bug Nr. 5, Formatspec-Support im Translator und Paritätslücken behoben — siehe oberster Eintrag)
+Letztes Update: 2026-10-09 (Tiefenprüfung der restlichen sechs Ansichten abgeschlossen — Gap K vollständig, Locale-Bug Nr. 6 und Paritätslücken behoben; siehe oberster Eintrag)
 
 ## Gesamtstatus
 

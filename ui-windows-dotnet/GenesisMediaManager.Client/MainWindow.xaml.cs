@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -412,7 +413,7 @@ public partial class MainWindow : Window
                     BorderBrush = (Brush)Application.Current.Resources["BorderBrush"],
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(16),
-                    Padding = new Thickness(16, 12),
+                    Padding = new Thickness(16, 12, 16, 12),
                 };
                 status.Child = new TextBlock
                 {
@@ -756,6 +757,9 @@ public partial class MainWindow : Window
             // (sortierresistent), aber fuer Konsistenz trotzdem deaktiviert.
             CanUserSortColumns = false,
         };
+        // Vor den Spalten-Lambdas deklariert: die lokale Funktion LoadThumbnailAsync
+        // (weiter unten) greift darauf zu. Ohne Zuweisung davor meldet C# CS0165.
+        var thumbnailCache = new Dictionary<int, BitmapImage?>();
         var thumbnailColumn = new DataGridTemplateColumn { Header = "", Width = new DataGridLength(56) };
         var thumbTemplate = new DataTemplate();
         var thumbRoot = new FrameworkElementFactory(typeof(Grid));
@@ -875,7 +879,6 @@ public partial class MainWindow : Window
 
         MediaSearchFilters? activeFilters = null;
         MediaItem? selectedItem = null;
-        var thumbnailCache = new Dictionary<int, BitmapImage?>();
 
         async Task LoadThumbnailAsync(object sender)
         {

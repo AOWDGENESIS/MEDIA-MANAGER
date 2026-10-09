@@ -81,10 +81,12 @@ public partial class MainWindow
             var filesCell = new FrameworkElementFactory(typeof(TextBlock));
             filesCell.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("Files"));
             filesCell.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
+            // CellTemplate erwartet ein DataTemplate, kein FrameworkElementFactory.
+            var filesTemplate = new DataTemplate { VisualTree = filesCell };
             grid.Columns.Add(new DataGridTemplateColumn
             {
                 Header = _tr.Tr("duplicates_view.col_files"),
-                CellTemplate = filesCell,
+                CellTemplate = filesTemplate,
                 Width = new DataGridLength(2, DataGridLengthUnitType.Star),
             });
         grid.Columns.Add(new DataGridTextColumn { Header = _tr.Tr("duplicates_view.col_reason"), Binding = new System.Windows.Data.Binding("Reason"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });

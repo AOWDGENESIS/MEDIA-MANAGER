@@ -82,6 +82,9 @@
          Gap L/§37) ebenfalls WPF-frei - eingebunden fuer
          ApiErrorSupportTests.cs. -->
     <Compile Include="..\GenesisMediaManager.Client\ApiErrorSupport.cs" Link="ApiErrorSupport.cs" />
+    <!-- DashboardSupport.cs (Karten-Zaehlerformate des Dashboards, §5)
+         ebenfalls WPF-frei - eingebunden fuer DashboardSupportTests.cs. -->
+    <Compile Include="..\GenesisMediaManager.Client\DashboardSupport.cs" Link="DashboardSupport.cs" />
   </ItemGroup>
 
 </Project>

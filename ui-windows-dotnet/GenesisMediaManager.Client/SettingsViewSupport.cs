@@ -41,6 +41,10 @@ public static class SettingsViewSupport
             ["provider"] = values.AiProvider,
             ["endpoint"] = values.AiEndpoint,
             ["model"] = values.AiModel,
+            // Paritaet zu settings_view.py::_on_save_clicked - das Feld war
+            // hier (und in der Ansicht) uebersehen worden, sodass der Wert
+            // beim Speichern nie mitgesendet wurde.
+            ["embedding_model"] = values.AiEmbeddingModel,
             ["timeout_seconds"] = values.AiTimeoutSeconds,
         },
         ["voice"] = new Dictionary<string, object>
@@ -88,6 +92,7 @@ public static class SettingsViewSupport
         AiProvider: settings.Ai.Provider,
         AiEndpoint: settings.Ai.Endpoint,
         AiModel: settings.Ai.Model,
+        AiEmbeddingModel: settings.Ai.EmbeddingModel,
         AiTimeoutSeconds: settings.Ai.TimeoutSeconds,
         VoiceEnabled: settings.Voice.Enabled,
         VoiceProvider: settings.Voice.Provider,
@@ -135,6 +140,7 @@ public sealed record SettingsFormValues(
     string AiProvider,
     string AiEndpoint,
     string AiModel,
+    string AiEmbeddingModel,
     double AiTimeoutSeconds,
     bool VoiceEnabled,
     string VoiceProvider,

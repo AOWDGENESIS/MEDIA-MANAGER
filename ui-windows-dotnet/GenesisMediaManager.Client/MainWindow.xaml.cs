@@ -14,6 +14,16 @@ public partial class MainWindow : Window
     private readonly GenesisApiClient _api = new();
     private readonly Translator _tr = Translator.Default;
 
+    // Erfolgsmeldung der Einstellungen-Ansicht, die ERST nach dem Neu-Aufbau
+    // der Ansicht angezeigt werden darf (Paritaet zu
+    // settings_view.py::_on_save_clicked: _reload() ZUERST, Erfolgsmeldung
+    // DANACH - sonst wuerde der Neubau die Meldung sofort ueberschreiben).
+    private string? _pendingSettingsStatus;
+
+    // Gleiches Muster fuer die Metadaten-Provider-Ansicht
+    // (providers_view.py::_on_save_clicked).
+    private string? _pendingProvidersStatus;
+
     /// <summary>
     /// §37 (Gap L) - zentrales Pendant zu
     /// <c>error_dialog.show_api_error()</c> in der Python-Referenz: zeigt
@@ -363,7 +373,10 @@ public partial class MainWindow : Window
             {
                 var subtitle = new TextBlock
                 {
-                    Text = _tr.Tr("dashboard.card_total") + ": " + summary.Total.ToString("N0"),
+                    // DashboardSupport.FormatCardCount: Paritaet zu Pythons
+                    // f"{count:,}".replace(",", ".") - "N0" waere
+                    // kulturabhaengig (achter Locale-Befund).
+                    Text = _tr.Tr("dashboard.card_total") + ": " + DashboardSupport.FormatCardCount(summary.Total),
                     FontSize = 13,
                     Foreground = (Brush)Application.Current.Resources["TextSecondaryBrush"],
                     Margin = new Thickness(0, 0, 0, 20),
@@ -413,6 +426,15 @@ public partial class MainWindow : Window
                 };
                 panel.Children.Add(status);
             }
+
+            // Paritaet zu dashboard.py: eigener "Aktualisieren"-Button
+            // (dashboard.refresh_button) - die Ansicht neu aufbauen. Ohne
+            // ihn kaeme man nur durch Weg- und Zuruecknavigieren an frische
+            // Daten (Glyph \uE72C = "Refresh" in Segoe MDL2 Assets).
+            var refreshBar = new WrapPanel { Margin = new Thickness(0, 18, 0, 0) };
+            AddPillButton(refreshBar, "\uE72C", _tr.Tr("dashboard.refresh_button"),
+                () => _ = ShowDashboardAsync());
+            panel.Children.Add(refreshBar);
 
             root.Content = panel;
             MainContent.Content = root;
@@ -486,7 +508,7 @@ public partial class MainWindow : Window
         grid.Children.Add(top);
         var valueText = new TextBlock
         {
-            Text = value.ToString("N0"), FontSize = 34, FontWeight = FontWeights.Bold,
+            Text = DashboardSupport.FormatCardCount(value), FontSize = 34, FontWeight = FontWeights.Bold,
             Foreground = (Brush)Application.Current.Resources["AccentBrush"], VerticalAlignment = VerticalAlignment.Center,
         };
         Grid.SetRow(valueText, 1);
@@ -511,7 +533,9 @@ public partial class MainWindow : Window
         };
         var stack = new StackPanel();
         stack.Children.Add(new TextBlock { Text = iconGlyph, FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 16, Foreground = (Brush)Application.Current.Resources["TextSecondaryBrush"] });
-        stack.Children.Add(new TextBlock { Text = value.ToString("N0"), FontSize = 24, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 6, 0, 2) });
+        // FormatStatCount: die Python-Referenz nutzt hier bewusst das
+        // schlichte str(count) ohne Tausendergruppen.
+        stack.Children.Add(new TextBlock { Text = DashboardSupport.FormatStatCount(value), FontSize = 24, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 6, 0, 2) });
         stack.Children.Add(new TextBlock { Text = title, FontSize = 12, Foreground = (Brush)Application.Current.Resources["TextSecondaryBrush"] });
         card.Child = stack;
         parent.Children.Add(card);
@@ -1518,6 +1542,7 @@ public partial class MainWindow : Window
         aiProviderCombo.SelectedItem = settings.Ai.Provider;
         var aiEndpointBox = new TextBox { Text = settings.Ai.Endpoint, Margin = new Thickness(0, 0, 0, 8) };
         var aiModelBox = new TextBox { Text = settings.Ai.Model, Margin = new Thickness(0, 0, 0, 8) };
+        var aiEmbeddingModelBox = new TextBox { Text = settings.Ai.EmbeddingModel, Margin = new Thickness(0, 0, 0, 8) };
         var aiTimeoutBox = new TextBox
         {
             Text = settings.Ai.TimeoutSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -1529,6 +1554,7 @@ public partial class MainWindow : Window
             BuildLabeledRow(_tr.Tr("settings_view.ai_provider_label"), aiProviderCombo),
             BuildLabeledRow(_tr.Tr("settings_view.ai_endpoint_label"), aiEndpointBox),
             BuildLabeledRow(_tr.Tr("settings_view.ai_model_label"), aiModelBox),
+            BuildLabeledRow(_tr.Tr("settings_view.ai_embedding_model_label"), aiEmbeddingModelBox),
             BuildLabeledRow(_tr.Tr("settings_view.ai_timeout_label"), aiTimeoutBox),
         }));
 
@@ -1690,8 +1716,8 @@ public partial class MainWindow : Window
             if (!double.TryParse(aiTimeoutBox.Text, floatStyle, culture, out var aiTimeout) ||
                 !double.TryParse(loudnessLufsBox.Text, floatStyle, culture, out var targetLufs) ||
                 !double.TryParse(loudnessTruePeakBox.Text, floatStyle, culture, out var targetTruePeak) ||
-                !int.TryParse(downloadMaxSizeBox.Text, out var downloadMaxSize) ||
-                !int.TryParse(downloadMinFreeDiskBox.Text, out var downloadMinFreeDisk) ||
+                !int.TryParse(downloadMaxSizeBox.Text, System.Globalization.NumberStyles.Integer, culture, out var downloadMaxSize) ||
+                !int.TryParse(downloadMinFreeDiskBox.Text, System.Globalization.NumberStyles.Integer, culture, out var downloadMinFreeDisk) ||
                 !double.TryParse(downloadTimeoutBox.Text, floatStyle, culture, out var downloadTimeout))
             {
                 statusText.Text = _tr.Tr("settings_view.save_failed", ("error", "invalid number"));
@@ -1706,6 +1732,7 @@ public partial class MainWindow : Window
                 AiProvider: (string)(aiProviderCombo.SelectedItem ?? settings.Ai.Provider),
                 AiEndpoint: aiEndpointBox.Text,
                 AiModel: aiModelBox.Text,
+                AiEmbeddingModel: aiEmbeddingModelBox.Text,
                 AiTimeoutSeconds: aiTimeout,
                 VoiceEnabled: voiceEnabledCheck.IsChecked ?? false,
                 VoiceProvider: (string)(voiceProviderCombo.SelectedItem ?? settings.Voice.Provider),
@@ -1730,21 +1757,44 @@ public partial class MainWindow : Window
             {
                 var result = await _api.UpdateSettingsAsync(
                     SettingsViewSupport.BuildUpdatePayload(values), confirm: true);
-                statusText.Text = result?.RestartRequired == true
-                    ? _tr.Tr("settings_view.save_done_restart_required")
-                    : _tr.Tr("settings_view.save_done");
                 if (values.Language != _tr.Language)
                 {
                     Translator.ConfigureDefaultLanguage(values.Language);
                 }
+                // Paritaet zu settings_view.py::_on_save_clicked: ZUERST neu
+                // laden (der Neubau setzt den Status zurueck), die
+                // Erfolgsmeldung erst DANACH anzeigen - sonst wuerde sie
+                // sofort wieder ueberschrieben. Der Neubau von
+                // ShowSettingsAsync() uebernimmt _pendingSettingsStatus am
+                // Ende automatisch.
+                _pendingSettingsStatus = result?.RestartRequired == true
+                    ? _tr.Tr("settings_view.save_done_restart_required")
+                    : _tr.Tr("settings_view.save_done");
+                await ShowSettingsAsync();
             }
             catch (Exception ex)
             {
                 ShowApiError(ex, _tr.Tr("settings_view.save_failed", ("error", ex.Message)));
             }
         };
-        root.Children.Add(saveButton);
+        // Paritaet zu settings_view.py: eigener "Verwerfen & neu laden"-
+        // Button (reload_button) neben dem Speichern.
+        var reloadButton = new Button
+        {
+            Content = _tr.Tr("settings_view.reload_button"), Padding = new Thickness(16, 6, 16, 6),
+            Margin = new Thickness(8, 8, 0, 0),
+        };
+        reloadButton.Click += async (_, _) => await ShowSettingsAsync();
+        var settingsButtonRow = new StackPanel { Orientation = Orientation.Horizontal };
+        settingsButtonRow.Children.Add(saveButton);
+        settingsButtonRow.Children.Add(reloadButton);
+        root.Children.Add(settingsButtonRow);
         root.Children.Add(statusText);
+        if (_pendingSettingsStatus is not null)
+        {
+            statusText.Text = _pendingSettingsStatus;
+            _pendingSettingsStatus = null;
+        }
     }
 
     /// <summary>
@@ -1911,7 +1961,14 @@ public partial class MainWindow : Window
             try
             {
                 await _api.UpdateSettingsAsync(ProvidersViewSupport.BuildUpdatePayload(formValues), confirm: true);
-                statusText.Text = _tr.Tr("providers_view.save_done");
+                // Paritaet zu providers_view.py::_on_save_clicked: ZUERST neu
+                // laden (der Neubau setzt den Status zurueck), die
+                // Erfolgsmeldung erst DANACH anzeigen - sonst wuerde sie
+                // sofort wieder ueberschrieben. Der Neubau von
+                // ShowProvidersAsync() uebernimmt _pendingProvidersStatus
+                // am Ende automatisch.
+                _pendingProvidersStatus = _tr.Tr("providers_view.save_done");
+                await ShowProvidersAsync();
             }
             catch (Exception ex)
             {
@@ -1925,6 +1982,11 @@ public partial class MainWindow : Window
         buttonRow.Children.Add(reloadButton);
         root.Children.Add(buttonRow);
         root.Children.Add(statusText);
+        if (_pendingProvidersStatus is not null)
+        {
+            statusText.Text = _pendingProvidersStatus;
+            _pendingProvidersStatus = null;
+        }
     }
 
     private static GroupBox BuildGroup(string header, IEnumerable<UIElement> children)

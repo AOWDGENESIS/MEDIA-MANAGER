@@ -1,4 +1,64 @@
 
+## 2026-10-09 (Fortsetzung 8) - Nachprüfung Dashboard/Einstellungen/Provider: fehlendes Embedding-Modell-Feld, Locale-Bug Nr. 8 und Reihenfolge-Lücken behoben
+
+Abschließende Tiefenprüfung der drei Ansichten, die in den bisherigen
+Runden noch keinen eigenen Zeile-für-Zeile-Durchgang hatten:
+Dashboard (§5), Einstellungen (§45-§52) und Metadaten-Provider (§10/§11,
+Gap I) — jeweils gegen
+`ui-reference-pyside/genesis_ui/views/{dashboard,settings_view,providers_view}.py`.
+
+**Befund 1 (Bug, behoben): Das KI-Feld „Embedding-Modell" fehlte in der
+Einstellungen-Ansicht komplett.** Die Python-Referenz zeigt und speichert
+`ai.embedding_model` (für die semantische Suche, §26); im WPF-Client gab
+es weder das Eingabefeld noch den Payload-Schlüssel (`ai_embedding_model`
+im ai-Abschnitt von `PATCH /settings`). Beim Speichern aus dem WPF-Client
+waere der Wert damit nie mitgesendet worden. Fix: Feld in der Ansicht,
+`AiEmbeddingModel` in `SettingsFormValues`, `embedding_model` in
+`SettingsViewSupport.BuildUpdatePayload`, Tests erweitert.
+
+**Befund 2 (Bug, behoben): Locale-Bug Nr. 8 in den Dashboard-Karten.**
+`value.ToString("N0")` ist kulturabhängig (en-US „1,234" statt der
+Referenz-„1.234"); Python nutzt `f"{count:,}".replace(",", ".")` —
+Tausenderpunkt immer, locale-unabhängig. Fix: neue WPF-freie
+`DashboardSupport.FormatCardCount()`/`FormatStatCount()` (Statistik-Karten
+nutzen wie die Referenz das schlichte `str(count)` ohne Gruppen),
+getestet in `DashboardSupportTests` (u.a. unter erzwungener en-US-Kultur).
+
+**Befund 3 (Parität, hergestellt): „Neu laden zuerst, Erfolgsmeldung
+danach".** Python lädt Einstellungen/Provider nach dem Speichern ERST neu
+(der Reload setzt den Status zurück) und zeigt die Erfolgsmeldung danach
+— sonst würde sie sofort überschrieben (in der Referenz explizit per
+Testfall abgesichert). Der WPF-Client zeigte die Meldung ohne Reload.
+Fix: `_pendingSettingsStatus`/`_pendingProvidersStatus` — die Ansicht
+wird neu aufgebaut und übernimmt die Meldung am Ende.
+
+**Befund 4 (Parität, hergestellt): fehlende Buttons.** Dem WPF-Dashboard
+fehlte der „Aktualisieren"-Button (`dashboard.refresh_button`), den
+Einstellungen der „Neu laden"-Button (`settings_view.reload_button`) —
+beide ergänzt (Dashboard als Pill-Button im v2-Stil, Glyph U+E72C).
+
+**Befund 5 (Konsistenz): Ganzzahl-Parsen in den Einstellungen** jetzt
+ebenfalls mit InvariantCulture (wie die übrigen Zahlenfelder der
+Ansicht).
+
+**Bestätigt ohne Befund:** Dashboard-Statuszeile (Version/Provider/
+KI-Status/Safe-Test-Modus), Fehlerpfad (`dashboard.error` als
+Statusanzeige — wie in Python, kein Dialog); Einstellungen: alle sieben
+Abschnitte mit allen Feldern (Allgemein/Medienordner/KI/Sprachausgabe/
+Lautheit/Download/Datenschutz), Ordner-Duplikatschutz, Scan mit
+expliziter Ordnerliste (`scan_no_folders`/`scan_done`-Zähler),
+Bestätigungsdialog Default No, lokale Zahlenvalidierung, Live-
+Sprachumschaltung; Provider: alle acht `metadata`-Felder und vier
+Hinweistexte, Nur-`metadata`-Payload, Bestätigung Default No, Reload-
+Verhalten. Die Spinbox-Wertebereiche der Referenz (z.B. LUFS -40..0)
+bildet der WPF-Client weiterhin als frei editierbare Textfelder mit
+Parse-Validierung ab — etablierte Haus-Konvention dieser Ansicht.
+
+**Verifikation:** Wie zuvor kein `dotnet build`/`dotnet test` möglich —
+Ersatzprüfungen: Klammer-/Strukturcheck (balanciert), csproj-XML
+parsebar, i18n-Schlüssel-Existenz geprüft. Windows-Build/Testlauf
+weiterhin nachzuholen.
+
 ## 2026-10-09 (Fortsetzung 7) - Gap L geschlossen: zentraler API-Fehlerdialog mit §37-Fehler-ID und Lösungshinweis
 
 Gap L (GAP_ANALYSIS.md §5) war die letzte dokumentierte systematische
@@ -506,7 +566,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-09 (Gap L geschlossen: zentraler API-Fehlerdialog mit §37-Fehler-ID/Lösungshinweis an allen 35 Aufrufstellen — siehe oberster Eintrag)
+Letztes Update: 2026-10-09 (Nachprüfung Dashboard/Einstellungen/Provider: fehlendes Embedding-Modell-Feld, Locale-Bug Nr. 8 und Reihenfolge-Lücken behoben — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

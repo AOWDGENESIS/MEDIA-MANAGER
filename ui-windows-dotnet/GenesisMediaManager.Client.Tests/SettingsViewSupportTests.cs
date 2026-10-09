@@ -33,6 +33,7 @@ public class SettingsViewSupportTests
         Assert.Equal("null", values.AiProvider);
         Assert.Equal("http://127.0.0.1:11434", values.AiEndpoint);
         Assert.Equal("qwen2.5:0.5b", values.AiModel);
+        Assert.Equal("all-minilm", values.AiEmbeddingModel);
         Assert.Equal(30.0, values.AiTimeoutSeconds);
         Assert.False(values.VoiceEnabled);
         Assert.Equal("null", values.VoiceProvider);
@@ -85,6 +86,9 @@ public class SettingsViewSupportTests
 
         var ai = Assert.IsType<Dictionary<string, object>>(payload["ai"]);
         Assert.Equal("null", ai["provider"]);
+        // §26/Paritaet: auch das Embedding-Modell muss mitgesendet werden
+        // (war urspruenglich uebersehen worden).
+        Assert.Equal("all-minilm", ai["embedding_model"]);
         Assert.Equal(30.0, ai["timeout_seconds"]);
 
         var voice = Assert.IsType<Dictionary<string, object>>(payload["voice"]);

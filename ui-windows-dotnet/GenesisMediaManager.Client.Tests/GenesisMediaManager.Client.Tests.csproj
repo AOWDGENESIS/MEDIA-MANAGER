@@ -67,6 +67,9 @@
          Fallback-Idiom des Download-/Import-Centers, §30-§32) ebenfalls
          WPF-frei - eingebunden fuer DownloadCenterSupportTests.cs. -->
     <Compile Include="..\GenesisMediaManager.Client\DownloadCenterSupport.cs" Link="DownloadCenterSupport.cs" />
+    <!-- AiCenterSupport.cs (Score-Prozentformat des KI-Centers, §25/§26)
+         ebenfalls WPF-frei - eingebunden fuer AiCenterSupportTests.cs. -->
+    <Compile Include="..\GenesisMediaManager.Client\AiCenterSupport.cs" Link="AiCenterSupport.cs" />
   </ItemGroup>
 
 </Project>

@@ -122,7 +122,10 @@ public partial class MainWindow
             {
                 r.Filename,
                 KindLabel = _tr.Tr(MediaTableSupport.MediaKindLabelKey(r.Kind)),
-                ScoreText = $"{r.Score:P0}",
+                // Invariantes "87%"-Format wie Pythons f"{score:.0%}"
+                // (siehe AiCenterSupport.FormatScore; "{...:P0}" waere
+                // systemkulturabhaengig, z.B. "87 %" unter de-DE).
+                ScoreText = AiCenterSupport.FormatScore(r.Score),
             }).ToList();
         }
 

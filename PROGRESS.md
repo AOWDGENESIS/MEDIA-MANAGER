@@ -1,4 +1,45 @@
 
+## 2026-10-08 (Fortsetzung 4) - Tiefenprüfung KI-Center: Score-Locale-Bug behoben, ansonsten volle Parität bestätigt
+
+Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), fünfter
+Bereich: KI-Center (`MainWindow.AiCenter.cs` vs.
+`ui-reference-pyside/genesis_ui/views/ai_center_view.py`, §25/§26,
+ADR-0017).
+
+**Befund 1 (Bug, behoben): Score-Anzeige war systemkulturabhängig.**
+Die Treffer-Scores der semantischen Suche wurden per
+`$"{score:P0}"` formatiert — unter deutschem Windows "87 %" statt
+"87%" (Pythons `f"{score:.0%}"` ist locale-unabhängig). Fix: neue
+WPF-freie Hilfsfunktion `AiCenterSupport.FormatScore()` (Custom-Format
+`"0%"`, `InvariantCulture`, "half to even" wie Python), getestet in
+`AiCenterSupportTests` (u.a. unter erzwungener de-DE-Kultur). Vierter
+Befund dieser Fehlerklasse nach Confidence (Duplikate) und Dateigröße
+(Download-Center) — alle Prozent-/Zahlenformate des Clients sind damit
+auf InvariantCulture umgestellt.
+
+**Bestätigt ohne Befund:** Statusbanner-Vierweg (Laden-Fehler/
+deaktiviert/nicht verfügbar/aktiv mit Provider+Embedding-Modell),
+Reindex-Ablauf ("reindexing" → done mit embedded/total bzw. failed,
+ohne confirm wie in der Referenz — reine additive Cache-Operation),
+Suchablauf (leere Anfrage wird STILL ignoriert wie in Python, kein
+Warn-Dialog; Ergebnisliste wird VOR dem API-Aufruf geleert;
+"nicht verfügbar"/"keine Treffer"/"n Treffer"-Statusmeldungen in
+derselben Reihenfolge), Medienart-Label-Fallback auf den Rohwert
+(`MediaKindLabelKey`-Default entspricht `MEDIA_KIND_LABEL_KEYS.get(kind,
+kind)`), Enter-Taste löst die Suche aus (returnPressed-Pendant),
+API-Ebene: `GET /ai/status`, `POST /ai/search/reindex`,
+`POST /ai/search` mit `{query, top_k=20}` und alle DTO-Felder gegen
+`core/genesis_core/api/app.py` bzw. `core/genesis_core/ai/search.py`
+(SemanticSearchResult: media_file_id/filename/kind/score).
+**Bewusst beibehaltene Abweichung:** fehlt das Embedding-Modell, zeigt
+der WPF-Client "-" statt Pythons "None" (konsistent mit den übrigen
+"-"+Fallbacks des Clients, z.B. im Download-Center).
+
+**Verifikation:** Wie zuvor kein `dotnet build`/`dotnet test` möglich
+(dot.net/NuGet in dieser Sandbox nicht erreichbar) — Ersatzprüfungen:
+Klammer-/Strukturcheck (balanciert), Zeile-für-Zeile-Parity-Vergleich.
+Windows-Build/Testlauf weiterhin nachzuholen.
+
 ## 2026-10-08 (Fortsetzung 3) - Tiefenprüfung Download-/Import-Center: Locale-Bug in Größenanzeige behoben, Python-`or`-Fallback-Parität hergestellt
 
 Fortsetzung der stichprobenartigen WPF-Tiefenprüfung (Gap K), vierter
@@ -226,7 +267,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-08 (Tiefenprüfung Download-/Import-Center: Größen-Locale-Bug behoben, Python-or-Fallback-Parität — siehe oberster Eintrag)
+Letztes Update: 2026-10-08 (Tiefenprüfung KI-Center: Score-Locale-Bug behoben, volle Parität bestätigt — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

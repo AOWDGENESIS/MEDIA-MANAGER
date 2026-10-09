@@ -99,7 +99,10 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("plugins_view.load_failed", ("error", ex.Message));
+                // Gap L (§37): wie _on_reload_clicked in der Python-Referenz -
+                // Fehlerdialog statt Statuszeile (die Statuszeile bleibt fuer
+                // den reinen Listen-Ladefehler in ReloadAsync zustaendig).
+                ShowApiError(ex);
             }
         };
 

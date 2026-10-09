@@ -78,6 +78,10 @@
          §35/§36) ebenfalls WPF-frei - eingebunden fuer
          JobQueueSupportTests.cs. -->
     <Compile Include="..\GenesisMediaManager.Client\JobQueueSupport.cs" Link="JobQueueSupport.cs" />
+    <!-- ApiErrorSupport.cs (Textaufbau des zentralen API-Fehlerdialogs,
+         Gap L/§37) ebenfalls WPF-frei - eingebunden fuer
+         ApiErrorSupportTests.cs. -->
+    <Compile Include="..\GenesisMediaManager.Client\ApiErrorSupport.cs" Link="ApiErrorSupport.cs" />
   </ItemGroup>
 
 </Project>

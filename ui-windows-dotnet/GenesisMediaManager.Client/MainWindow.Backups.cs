@@ -98,12 +98,16 @@ public partial class MainWindow
             try
             {
                 await _api.CreateDbBackupAsync();
-                statusText.Text = _tr.Tr("backups_view.create_done");
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("dashboard.error", ("error", ex.Message));
+                // Gap L (§37): Fehlerdialog wie show_api_error() in der
+                // Python-Referenz - dort bricht der Fehlerfall OHNE
+                // nachfolgenden Reload ab.
+                ShowApiError(ex);
+                return;
             }
+            statusText.Text = _tr.Tr("backups_view.create_done");
             await ReloadAsync();
         };
         createConfigBtn.Click += async (_, _) =>
@@ -111,12 +115,13 @@ public partial class MainWindow
             try
             {
                 await _api.CreateConfigBackupAsync();
-                statusText.Text = _tr.Tr("backups_view.create_done");
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("dashboard.error", ("error", ex.Message));
+                ShowApiError(ex);
+                return;
             }
+            statusText.Text = _tr.Tr("backups_view.create_done");
             await ReloadAsync();
         };
         refreshBtn.Click += async (_, _) => await ReloadAsync();
@@ -133,12 +138,13 @@ public partial class MainWindow
             try
             {
                 await _api.RestoreBackupAsync(backup.Id, true);
-                statusText.Text = _tr.Tr("backups_view.restore_done");
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("dashboard.error", ("error", ex.Message));
+                ShowApiError(ex);
+                return;
             }
+            statusText.Text = _tr.Tr("backups_view.restore_done");
             await ReloadAsync();
         };
 

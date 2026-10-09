@@ -14,6 +14,39 @@ public partial class MainWindow : Window
     private readonly GenesisApiClient _api = new();
     private readonly Translator _tr = Translator.Default;
 
+    /// <summary>
+    /// §37 (Gap L) - zentrales Pendant zu
+    /// <c>error_dialog.show_api_error()</c> in der Python-Referenz: zeigt
+    /// eine fehlgeschlagene Core-API-Anfrage als Fehlerdialog und haengt bei
+    /// Vorhandensein die nachschlagbare Fehler-ID + den Loesungshinweis an
+    /// (aus <see cref="GenesisApiException.ErrorId"/>/
+    /// <see cref="GenesisApiException.SolutionHint"/>) - genau die Angaben,
+    /// die der Nutzer braucht, um den Vorfall im Fehler-Center
+    /// (nav.error_center) wiederzufinden, ohne selbst Logdateien durchsuchen
+    /// zu muessen. Der optionale <paramref name="message"/>-Parameter erlaubt
+    /// es Aufrufern, eine handlungsspezifische Meldung voranzustellen (wie in
+    /// der Referenz, z.B. "Kapitel konnten nicht geladen werden: ...");
+    /// Fehler-ID/Loesungshinweis werden in jedem Fall ergaenzt.
+    /// </summary>
+    private void ShowApiError(Exception ex, string? message = null)
+    {
+        string? errorIdLine = null;
+        string? solutionHintLine = null;
+        if (ex is Api.GenesisApiException apiEx)
+        {
+            if (!string.IsNullOrEmpty(apiEx.ErrorId))
+            {
+                errorIdLine = _tr.Tr("error_dialog.error_id_line", ("error_id", apiEx.ErrorId));
+            }
+            if (!string.IsNullOrEmpty(apiEx.SolutionHint))
+            {
+                solutionHintLine = _tr.Tr("error_dialog.solution_hint_line", ("hint", apiEx.SolutionHint));
+            }
+        }
+        var text = ApiErrorSupport.BuildApiErrorText(message ?? ex.Message, errorIdLine, solutionHintLine);
+        MessageBox.Show(text, _tr.Tr("common.error_title"), MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+
     // Navigationsstruktur 1:1 wie in ui-reference-pyside/genesis_ui/main_window.py
     // (Originalauftrag §4) - bei Aenderungen dort bitte hier synchron halten.
     // ADR-0009: dieselben i18n-Schluessel (i18n/<sprache>.json) wie die
@@ -989,12 +1022,17 @@ public partial class MainWindow : Window
             {
                 var result = await _api.ComputeFingerprintAsync(item.Id);
                 MessageBox.Show(
-                    _tr.Tr("media_table.fingerprint_done_text", ("duration", result?.DurationSeconds.ToString("F1") ?? "")),
+                    _tr.Tr("media_table.fingerprint_done_text",
+                        // InvariantCulture: Pythons f"{...:.1f}" ist ebenfalls
+                        // locale-unabhaengig (siebter Befund der Locale-Klasse).
+                        ("duration", result?.DurationSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) ?? "")),
                     _tr.Tr("media_table.fingerprint_done_title"));
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("media_table.fingerprint_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                // Gap L (§37): Fehlerdialog mit Fehler-ID/Loesungshinweis wie
+                // show_api_error() in der Python-Referenz.
+                ShowApiError(ex, _tr.Tr("media_table.fingerprint_failed", ("error", ex.Message)));
             }
         };
         qualityBtn.Click += async (_, _) =>
@@ -1008,7 +1046,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("media_table.quality_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("media_table.quality_failed", ("error", ex.Message)));
                 return;
             }
             MessageBox.Show(_tr.Tr("media_table.quality_done_text"), _tr.Tr("media_table.quality_done_title"));
@@ -1456,7 +1494,9 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                foldersStatus.Text = _tr.Tr("settings_view.scan_failed", ("error", ex.Message));
+                // Gap L (§37): Fehlerdialog mit Fehler-ID/Loesungshinweis wie
+                // show_api_error() in der Python-Referenz.
+                ShowApiError(ex, _tr.Tr("settings_view.scan_failed", ("error", ex.Message)));
             }
         };
         foldersButtonRow.Children.Add(addFolderButton);
@@ -1700,7 +1740,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("settings_view.save_failed", ("error", ex.Message));
+                ShowApiError(ex, _tr.Tr("settings_view.save_failed", ("error", ex.Message)));
             }
         };
         root.Children.Add(saveButton);
@@ -1875,7 +1915,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("providers_view.save_failed", ("error", ex.Message));
+                ShowApiError(ex, _tr.Tr("providers_view.save_failed", ("error", ex.Message)));
             }
         };
         // Entspricht ProvidersView._reload(): verwirft nicht gespeicherte

@@ -1,4 +1,68 @@
 
+## 2026-10-09 (Fortsetzung 7) - Gap L geschlossen: zentraler API-Fehlerdialog mit §37-Fehler-ID und Lösungshinweis
+
+Gap L (GAP_ANALYSIS.md §5) war die letzte dokumentierte systematische
+Abweichung zur Python-Referenz: Dort zeigt
+`error_dialog.show_api_error()` bei JEDEM fehlgeschlagenen Core-API-
+Aufruf zusätzlich zur Meldung eine nachschlagbare Fehler-ID und einen
+Lösungshinweis an (§37 — damit der Vorfall im Fehler-Center
+wiederzufinden ist, ohne Logdateien durchsuchen zu müssen). Der
+WPF-Client zeigte an den ~35 entsprechenden Stellen nur einfache
+MessageBoxen oder Statuszeilentext ohne diese Angaben.
+
+**Umsetzung (vier Bausteine):**
+
+1. **API-Schicht transportiert die §37-Felder.** `GenesisApiException`
+   erhält `ErrorId`/`SolutionHint`. Die neue zentrale Parse-Funktion
+   `BuildApiExceptionFromBody()` erkennt BEIDE §37-Fehlerformate exakt
+   wie `_build_api_error()` der Python-Referenz: das globale
+   Exception-Handler-Format (`error_id`/`message`/`solution_hint`,
+   Vorrang) und FastAPIs `{"detail"}`-Format, sonst roher
+   Statuscode-Text. Ein neuer `ApiErrorDetailHandler`
+   (DelegatingHandler) fängt JEDEN Fehlerstatus ab, BEVOR die
+   `GetFromJsonAsync`-Erweiterungsmethoden ihre kontextlose
+   `HttpRequestException` werfen können — damit kommen Fehler-ID/
+   Lösungshinweis bei allen 70+ API-Aufrufen des Clients an, nicht nur
+   bei den 50+ mit manuellem `EnsureSuccessWithDetailAsync`.
+2. **Zentraler Dialoghelfer.** `MainWindow.ShowApiError()` ist das
+   Pendant zu `show_api_error()`: Titel `common.error_title`,
+   handlungsspezifische Meldung (optional), darunter Fehler-ID-Zeile
+   (`error_dialog.error_id_line`) und Lösungshinweis
+   (`error_dialog.solution_hint_line`), nur bei nicht-leeren Werten.
+   Der Textzusammenbau liegt WPF-frei in `ApiErrorSupport`
+   (getestet in `ApiErrorSupportTests`, inkl. Tests gegen die
+   Parse-Funktion für alle vier Body-Varianten).
+3. **Migration aller 35 Aufrufstellen** — 1:1 gegen die Python-Referenz
+   abgeglichen (Zählprobe: exakt 35): KI-/KI-Musik-Dialog (2),
+   Metadaten-/Umbenennen-/Cover-Dialog (3), Lautstärke-/Schnitt-/
+   Konvertier-Dialog (3), Hörbuch-Dialog (7), Film-/Episoden-Dialog (2),
+   Medien-Tabelle Fingerprint/Qualitätsanalyse (2), Bibliotheks-Detail
+   (1), Duplikate-Prüfung (2), Backups Erstellen/Wiederherstellen (3),
+   Diagnose (1), Plugins neu laden (1), Job-Aktionen Pause/Fortsetzen/
+   Abbrechen (1), Fehler-Center Lösen (1), Voice Studio Profile
+   laden/erstellen/löschen (3), Einstellungen Scan/Speichern (2),
+   Provider Speichern (1). Wo die Python-Referenz nach einem Fehler
+   abbricht OHNE neu zu laden (Backups-Aktionen, Fehler-Center-Lösen,
+   Job-Aktionen), tut der WPF-Client das jetzt ebenfalls.
+4. **Beibehalten (bewusste Parität):** Reine Statuszeilen-Fehler wie
+   Listen-Laden (Log-Viewer, Job-Übersicht, Fehler-Center-Liste),
+   Dashboard-Verbindungsfehler, lokale Validierung („ungültige Zahl“)
+   und der lokale Datei-Lesefehler im Cover-Dialog (`OSError`-Fall —
+   laut error_dialog.py-Docstring die einzige bewusste Ausnahme von
+   `show_api_error()`) bleiben beim Status- bzw. Einfach-Dialog.
+
+**Zusatzbefund (behoben):** Der Fingerprint-Erfolgsdialog formatierte
+die Dauer mit kulturabhängigem `ToString("F1")` — Python nutzt `:.1f`
+(locale-unabhängig). Auf InvariantCulture umgestellt (siebter Befund
+der Locale-Klasse).
+
+**Verifikation:** Wie zuvor kein `dotnet build`/`dotnet test` möglich
+(dot.net/NuGet in dieser Sandbox nicht erreichbar) — Ersatzprüfungen:
+Klammer-/Strukturcheck (balanciert), csproj-XML parsebar,
+Zeile-für-Zeile-Abgleich der 35 Migrationsstellen gegen die
+Python-Aufrufstellen, Zählprobe 35/35. Windows-Build/Testlauf
+weiterhin nachzuholen.
+
 ## 2026-10-09 (Fortsetzung 6) - Tiefenprüfung der restlichen sechs Ansichten: Locale-Bug Nr. 6, JobQueue- und Backups-Parität hergestellt
 
 Abschluss der stichprobenartigen WPF-Tiefenprüfung (Gap K) für die
@@ -442,7 +506,7 @@ Audio-/Videoausgabe.
 > Sitzungsstart zuerst lesen (zusammen mit PROJECT_BRIEF.md, ARCHITECTURE.md,
 > DECISIONS.md). Bei jedem Sitzungsende aktualisieren.
 
-Letztes Update: 2026-10-09 (Tiefenprüfung der restlichen sechs Ansichten abgeschlossen — Gap K vollständig, Locale-Bug Nr. 6 und Paritätslücken behoben; siehe oberster Eintrag)
+Letztes Update: 2026-10-09 (Gap L geschlossen: zentraler API-Fehlerdialog mit §37-Fehler-ID/Lösungshinweis an allen 35 Aufrufstellen — siehe oberster Eintrag)
 
 ## Gesamtstatus
 

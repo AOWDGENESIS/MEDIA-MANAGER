@@ -204,7 +204,9 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("duplicates_view.review_failed", ("error", ex.Message));
+                // Gap L (§37): Fehlerdialog mit Fehler-ID/Loesungshinweis wie
+                // show_api_error() in der Python-Referenz.
+                ShowApiError(ex, _tr.Tr("duplicates_view.review_failed", ("error", ex.Message)));
                 return;
             }
             await ReloadAsync();
@@ -218,7 +220,9 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("duplicates_view.review_failed", ("error", ex.Message));
+                // Gap L (§37): Fehlerdialog mit Fehler-ID/Loesungshinweis wie
+                // show_api_error() in der Python-Referenz.
+                ShowApiError(ex, _tr.Tr("duplicates_view.review_failed", ("error", ex.Message)));
                 return;
             }
             await ReloadAsync();

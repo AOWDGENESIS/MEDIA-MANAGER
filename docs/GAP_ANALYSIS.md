@@ -736,10 +736,12 @@ gesamten Liste freigegeben ("mach es der reihe nach bis du fertig bist").
    vom Nutzer angeforderte Deep-Search/Review stehen noch aus (nächste
    Sitzung).
 
-## 5. Nachtrag 2026-10-08 — Stichprobenartige WPF-Tiefenprüfung (läuft)
+## 5. Nachtrag 2026-10-08 — Stichprobenartige WPF-Tiefenprüfung (ABGESCHLOSSEN 2026-10-09)
 
 Fortsetzung von Gap K ("stichprobenartige Tiefenprüfung jeder einzelnen
-.NET-Ansicht gegen ihre Python-Referenz"). Geprüft und abgeschlossen:
+.NET-Ansicht gegen ihre Python-Referenz"). Seit 2026-10-09 sind ALLE
+§1-§54-Ansichten tiefengeprüft (Gap K vollständig) und Gap L (zentraler
+API-Fehlerdialog) ist geschlossen. Geprüft und abgeschlossen:
 Medientabelle (Filter-Dialog/Player/Kontextmenü — ein LUFS-Parse-Bug
 behoben, Player-Parität zu `player_bar.py` geschlossen, siehe
 PROGRESS.md 2026-10-08) und Bibliotheks-Drill-down (Rendering 1:1,
@@ -749,7 +751,21 @@ Platzhalterhinweis der Python-Referenz). Dabei systematisch aufgefallen:
 
 ### L. [MITTEL] WPF zeigt bei fehlgeschlagenen Core-API-Anfragen keinen Fehler-Dialog (Parität zu `show_api_error`, §37)
 
-**Status: OFFEN (neu, 2026-10-08).** Die Python-Referenz-UI zeigt bei
+**Status: GESCHLOSSEN (2026-10-09, Fortsetzung 7).** `GenesisApiException`
+transportiert jetzt `ErrorId`/`SolutionHint`; ein zentraler
+`ApiErrorDetailHandler` parst BEIDE §37-Fehlerformate (`error_id`-Format
+des globalen Exception-Handlers mit Vorrang, dann `detail`), bevor
+`GetFromJsonAsync` eine kontextlose `HttpRequestException` werfen kann.
+Die neue `MainWindow.ShowApiError()` (Textaufbau WPF-frei in
+`ApiErrorSupport`, getestet) ist an ALLEN 35 `show_api_error`-Stellen der
+Python-Referenz 1:1 übernommen (Zählprobe 35/35); Abbruch-ohne-Reload-
+Verhalten der Referenz ebenfalls übernommen. Bewusst NICHT umgestellt:
+reine Listen-Ladefehler (Statuszeile), Dashboard-Verbindungsfehler,
+lokale Validierung und der lokale Datei-Lesefehler im Cover-Dialog
+(`OSError`-Ausnahme laut error_dialog.py-Docstring). Details in
+PROGRESS.md 2026-10-09 (Fortsetzung 7).
+
+Ursprünglicher Befund: Die Python-Referenz-UI zeigt bei
 JEDER fehlgeschlagenen Core-API-Anfrage über
 `genesis_ui/dialogs/error_dialog.py::show_api_error()` (30 Aufrufstellen
 in `views/*.py`) zusätzlich zur Meldung die nachschlagbare Fehler-ID und

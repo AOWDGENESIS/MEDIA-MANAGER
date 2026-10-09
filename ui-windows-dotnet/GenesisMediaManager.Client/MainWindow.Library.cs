@@ -112,7 +112,11 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
+                // Paritaet zur Python-Referenz: ZUSATZLICH zur Statusanzeige
+                // im Detailbereich den zentralen Fehlerdialog zeigen (Gap L,
+                // §37 - library_view.py setzt beides).
                 detailBox.Text = _tr.Tr("library_view.detail_load_failed", ("error", ex.Message));
+                ShowApiError(ex);
             }
         };
 

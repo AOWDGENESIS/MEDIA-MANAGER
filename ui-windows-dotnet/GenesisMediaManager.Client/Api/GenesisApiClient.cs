@@ -7,14 +7,40 @@ using System.Text.Json;
 namespace GenesisMediaManager.Client.Api;
 
 /// <summary>
-/// Wird geworfen, wenn die Core-API einen Fehlerstatuscode liefert. Extrahiert
-/// FastAPIs <c>{"detail": "..."}</c>-Feld, damit die UI dieselbe klare
-/// deutschsprachige Fehlermeldung anzeigen kann wie der Python-Client
-/// (siehe ui-reference-pyside/genesis_ui/api_client.py::_extract_detail).
+/// Wird geworfen, wenn die Core-API einen Fehlerstatuscode liefert. Erkennt
+/// BEIDE vom Core Service verwendeten Fehlerformate (§37), exakt wie das
+/// Python-Pendant
+/// (ui-reference-pyside/genesis_ui/api_client.py::_build_api_error):
+/// <list type="number">
+/// <item><c>{"detail": "..."}</c> - normale, erwartete Validierungsfehler
+/// (HTTPException aus einem einzelnen Endpunkt, z.B. 404/403/422).</item>
+/// <item><c>{"error_id", "message", "solution_hint", ...}</c> - ein echter,
+/// unerwarteter Fehler aus dem globalen Exception-Handler der Core-API.
+/// Nur in diesem Fall gibt es eine nachschlagbare Fehler-ID, die der
+/// Fehlerdialog (Gap L, Pendant zu error_dialog.show_api_error) dem Nutzer
+/// zusaetzlich anzeigt, damit der Vorfall im Fehler-Center
+/// (nav.error_center) wiederzufinden ist.</item>
+/// </list>
 /// </summary>
 public sealed class GenesisApiException : Exception
 {
     public GenesisApiException(string message) : base(message) { }
+
+    public GenesisApiException(string message, string? errorId, string? solutionHint)
+        : base(message)
+    {
+        ErrorId = errorId;
+        SolutionHint = solutionHint;
+    }
+
+    /// <summary>Nachschlagbare §37-Fehler-ID (nur bei echten, unerwarteten
+    /// 500ern aus dem globalen Exception-Handler der Core-API gesetzt; bei
+    /// normalen 4xx-Validierungsfehlern <c>null</c>).</summary>
+    public string? ErrorId { get; }
+
+    /// <summary>Loesungshinweis aus dem §37-Fehlerformat (falls der globale
+    /// Exception-Handler der Core-API einen mitgeliefert hat).</summary>
+    public string? SolutionHint { get; }
 }
 
 /// <summary>
@@ -55,7 +81,14 @@ public sealed partial class GenesisApiClient : IDisposable
 
     public GenesisApiClient(string baseUrl = "http://127.0.0.1:8420")
     {
-        _http = new HttpClient { BaseAddress = new Uri(baseUrl) };
+        // ApiErrorDetailHandler (Gap L, §37): wandelt JEDEN Fehlerstatus in
+        // eine GenesisApiException mit error_id/solution_hint um, BEVOR die
+        // GetFromJsonAsync-Erweiterungsmethoden ihre kontextlose
+        // HttpRequestException werfen koennen.
+        _http = new HttpClient(new ApiErrorDetailHandler { InnerHandler = new System.Net.Http.HttpClientHandler() })
+        {
+            BaseAddress = new Uri(baseUrl),
+        };
         var token = TryReadApiToken();
         if (!string.IsNullOrEmpty(token))
         {
@@ -93,26 +126,100 @@ public sealed partial class GenesisApiClient : IDisposable
     {
         if (response.IsSuccessStatusCode) return;
 
+        // Defensive Zweitsicherung: Normalerweise wirft bereits der
+        // ApiErrorDetailHandler (siehe Konstruktor) bei jedem Fehlerstatus
+        // eine GenesisApiException mit den §37-Feldern - dieser Pfad hier
+        // deckt nur noch Aufrufe ab, die den Handler umgehen koennten.
+        var body = await response.Content.ReadAsStringAsync(ct);
+        throw BuildApiExceptionFromBody(body, (int)response.StatusCode, response.ReasonPhrase);
+    }
+
+    /// <summary>
+    /// Baut aus dem HTTP-Fehlerbody eine <see cref="GenesisApiException"/>.
+    /// Erkennt BEIDE §37-Fehlerformate exakt wie
+    /// <c>_build_api_error()</c> in der Python-Referenz
+    /// (ui-reference-pyside/genesis_ui/api_client.py): das globale
+    /// Exception-Handler-Format mit <c>error_id</c>/<c>message</c>/
+    /// <c>solution_hint</c> hat Vorrang, danach FastAPIs
+    /// <c>{"detail"}</c>-Format, sonst roher Statuscode-Text. Oeffentlich
+    /// (statt internal), damit das reine net8.0-Testprojekt ohne
+    /// InternalsVisibleTo dagegen testen kann (ApiErrorSupportTests).
+    /// </summary>
+    public static GenesisApiException BuildApiExceptionFromBody(string? body, int statusCode, string? reasonPhrase)
+    {
         string? detail = null;
-        try
+        string? errorId = null;
+        string? message = null;
+        string? solutionHint = null;
+        var hasErrorIdKey = false;
+        if (!string.IsNullOrWhiteSpace(body))
         {
-            var body = await response.Content.ReadAsStringAsync(ct);
-            if (!string.IsNullOrWhiteSpace(body))
+            try
             {
                 using var doc = JsonDocument.Parse(body);
-                if (doc.RootElement.TryGetProperty("detail", out var detailElement))
+                // §37-Format 2: echter, unerwarteter Fehler aus dem globalen
+                // Exception-Handler der Core-API - die blosse EXISTENZ des
+                // error_id-Schluessels entscheidet (Paritaet zu Python:
+                // "error_id" in body).
+                if (doc.RootElement.TryGetProperty("error_id", out var errorIdElement))
+                {
+                    hasErrorIdKey = true;
+                    errorId = errorIdElement.ValueKind == JsonValueKind.Null ? null : errorIdElement.GetString();
+                    if (doc.RootElement.TryGetProperty("message", out var messageElement)
+                        && messageElement.ValueKind != JsonValueKind.Null)
+                    {
+                        message = messageElement.GetString();
+                    }
+                    if (doc.RootElement.TryGetProperty("solution_hint", out var hintElement)
+                        && hintElement.ValueKind != JsonValueKind.Null)
+                    {
+                        solutionHint = hintElement.GetString();
+                    }
+                }
+                // §37-Format 1: erwarteter Validierungsfehler einer
+                // einzelnen Endpunkts (HTTPException).
+                else if (doc.RootElement.TryGetProperty("detail", out var detailElement))
                 {
                     detail = detailElement.ToString();
                 }
             }
-        }
-        catch (JsonException)
-        {
-            // Antwort war kein JSON - faellt unten auf den rohen Statuscode zurueck.
+            catch (JsonException)
+            {
+                // Antwort war kein JSON - faellt unten auf den rohen Statuscode zurueck.
+            }
         }
 
-        throw new GenesisApiException(
-            detail ?? $"Core-API-Fehler: HTTP {(int)response.StatusCode} {response.ReasonPhrase}");
+        var fallback = $"Core-API-Fehler: HTTP {statusCode} {reasonPhrase}";
+        if (hasErrorIdKey)
+        {
+            return new GenesisApiException(message ?? fallback, errorId, solutionHint);
+        }
+        return new GenesisApiException(detail ?? fallback);
+    }
+
+    /// <summary>
+    /// §37 (Gap L) - faengt JEDEN Fehlerstatus ab, BEVOR die
+    /// GetFromJsonAsync-/ReadFromJsonAsync-Erweiterungsmethoden ihre
+    /// kontextlose HttpRequestException werfen, und wandelt ihn in eine
+    /// <see cref="GenesisApiException"/> mit den strukturierten
+    /// §37-Feldern um. Damit kommt die Fehler-ID/der Loesungshinweis bei
+    /// allen 70+ API-Aufrufen dieses Clients an - die UI zeigt sie im
+    /// zentralen Fehlerdialog (Pendant zu error_dialog.show_api_error).
+    /// Erfolgsantworten laufen unveraendert durch.
+    /// </summary>
+    private sealed class ApiErrorDetailHandler : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return response;
+            }
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw BuildApiExceptionFromBody(body, (int)response.StatusCode, response.ReasonPhrase);
+        }
     }
 
     public async Task<HealthResponse?> GetHealthAsync(CancellationToken ct = default) =>

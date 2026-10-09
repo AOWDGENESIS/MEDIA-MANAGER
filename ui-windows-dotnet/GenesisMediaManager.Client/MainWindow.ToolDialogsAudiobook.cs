@@ -162,7 +162,9 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("audiobook_dialog.apply_tags_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                // Gap L (§37): Fehlerdialog mit Fehler-ID/Loesungshinweis wie
+                // show_api_error() in der Python-Referenz.
+                ShowApiError(ex, _tr.Tr("audiobook_dialog.apply_tags_failed", ("error", ex.Message)));
             }
         };
 
@@ -248,7 +250,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("audiobook_dialog.load_chapters_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("audiobook_dialog.load_chapters_failed", ("error", ex.Message)));
             }
         }
 
@@ -276,7 +278,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("audiobook_dialog.detect_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("audiobook_dialog.detect_failed", ("error", ex.Message)));
             }
         };
 
@@ -292,7 +294,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("audiobook_dialog.generate_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("audiobook_dialog.generate_failed", ("error", ex.Message)));
             }
         };
 
@@ -319,7 +321,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("audiobook_dialog.apply_chapters_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("audiobook_dialog.apply_chapters_failed", ("error", ex.Message)));
             }
         };
 
@@ -340,7 +342,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("audiobook_dialog.rename_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("audiobook_dialog.rename_failed", ("error", ex.Message)));
             }
         };
 
@@ -361,7 +363,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("audiobook_dialog.export_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("audiobook_dialog.export_failed", ("error", ex.Message)));
             }
         }
         exportJsonBtn.Click += async (_, _) => await ExportAsync("json");

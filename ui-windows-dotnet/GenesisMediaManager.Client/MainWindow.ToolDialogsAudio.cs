@@ -187,7 +187,9 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("loudness_dialog.apply_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                // Gap L (§37): Fehlerdialog mit Fehler-ID/Loesungshinweis wie
+                // show_api_error() in der Python-Referenz.
+                ShowApiError(ex, _tr.Tr("loudness_dialog.apply_failed", ("error", ex.Message)));
             }
         };
 
@@ -389,7 +391,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("cutter_dialog.apply_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("cutter_dialog.apply_failed", ("error", ex.Message)));
             }
         };
 
@@ -513,7 +515,7 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                MessageBox.Show(_tr.Tr("convert_dialog.apply_failed", ("error", ex.Message)), _tr.Tr("common.error_title"));
+                ShowApiError(ex, _tr.Tr("convert_dialog.apply_failed", ("error", ex.Message)));
             }
         };
 

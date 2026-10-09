@@ -115,7 +115,10 @@ public partial class MainWindow
             }
             catch (Exception ex)
             {
-                statusText.Text = _tr.Tr("dashboard.error", ("error", ex.Message));
+                // Gap L (§37): wie _on_resolve_clicked in der Python-Referenz -
+                // Fehlerdialog und Abbruch OHNE nachfolgenden Reload.
+                ShowApiError(ex);
+                return;
             }
             await ReloadAsync();
         };

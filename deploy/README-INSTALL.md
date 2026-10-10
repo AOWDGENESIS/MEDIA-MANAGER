@@ -24,9 +24,10 @@ keine Telemetrie (siehe `ARCHITECTURE.md` im Haupt-Repository, ADR-0001).
      Python-Umgebung für den Core-Service ein und legt Verknüpfungen im
      Startmenü/auf dem Desktop an.
    - Direkt im Anschluss startet `start.bat` die App automatisch.
-   - Bei jedem weiteren Doppelklick auf `start.bat` (oder einfach über
-     die angelegte Verknüpfung) wird die Installation übersprungen und
-     die App sofort gestartet.
+  - Bei jedem weiteren Doppelklick auf `start.bat` (oder einfach über
+    die angelegte Verknüpfung) wird die Installation übersprungen und
+    die App gestartet. Der Start prüft `/health` und verwendet einen bereits
+    laufenden Core-Service weiter, statt einen zweiten Prozess zu starten.
 
 Keine Administratorrechte nötig (Installation nur für den aktuellen
 Benutzer). Deinstallation über **Einstellungen → Apps → Installierte

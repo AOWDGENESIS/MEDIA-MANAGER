@@ -10,19 +10,28 @@ set "DATADIR=%APPDATA%\GenesisMediaManager"
 if not exist "%DATADIR%" mkdir "%DATADIR%" >nul 2>&1
 set "LOGFILE=%DATADIR%\core-service.log"
 
-if exist "%INSTALLDIR%.venv\Scripts\pythonw.exe" (
-    REM "pythonw.exe" zeigt bewusst kein eigenes Konsolenfenster, ABER
-    REM dessen Ausgabe/Fehler werden in eine Log-Datei umgeleitet statt
-    REM ins Leere zu gehen (kein stiller Fehlschlag, siehe
-    REM README-INSTALL.md Abschnitt "Falls etwas nicht funktioniert").
-    echo [GENESIS] Core-Service wird gestartet, Log: %LOGFILE%
-    start "" /B "%INSTALLDIR%.venv\Scripts\pythonw.exe" "%INSTALLDIR%backend\run_api.py" > "%LOGFILE%" 2>&1
-) else (
+if not exist "%INSTALLDIR%.venv\Scripts\pythonw.exe" (
     echo [GENESIS] Python-Laufzeitumgebung fehlt - Core-Service kann nicht gestartet werden.
     echo [GENESIS] Bitte Install-GenesisMediaManager.ps1 erneut ausfuehren, nachdem Python installiert wurde.
     pause
     exit /b 1
 )
+
+REM Bei jedem erneuten Doppelklick KEINEN zweiten Core-Service starten:
+REM dieser wuerde am schon belegten Port 8420 scheitern und das Log des
+REM funktionierenden ersten Prozesses mit einer Fehlermeldung ueberschreiben.
+REM /health muss wirklich GENESIS mit status=ok melden (nicht irgendein 200).
+powershell -NoProfile -Command "try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 1; if ($s.status -eq 'ok') { exit 0 } } catch {}; exit 1" >nul 2>&1
+if not errorlevel 1 (
+    echo [GENESIS] Core-Service laeuft bereits - vorhandenen Prozess verwenden.
+    set "READY=1"
+    goto :ready
+)
+
+REM pythonw.exe zeigt bewusst kein Konsolenfenster. Fehler gehen ins Log,
+REM nicht ins Leere (siehe README-INSTALL.md).
+echo [GENESIS] Core-Service wird gestartet, Log: %LOGFILE%
+start "" /B "%INSTALLDIR%.venv\Scripts\pythonw.exe" "%INSTALLDIR%backend\run_api.py" > "%LOGFILE%" 2>&1
 
 REM Statt einer starren, oft zu kurzen Wartezeit (frueher: feste 2
 REM Sekunden) aktiv auf Erreichbarkeit warten, maximal 60 Sekunden. Der
@@ -32,7 +41,7 @@ REM ersten Zugriff einzeln prueft, bevor Python sqlalchemy/fastapi/
 REM onnxruntime/... ueberhaupt fertig importieren kann.
 set "READY=0"
 for /L %%i in (1,1,60) do (
-    powershell -NoProfile -Command "try { $null = Invoke-WebRequest -Uri 'http://127.0.0.1:8420/health' -UseBasicParsing -TimeoutSec 1; exit 0 } catch { exit 1 }" >nul 2>&1
+    powershell -NoProfile -Command "try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 1; if ($s.status -eq 'ok') { exit 0 } } catch {}; exit 1" >nul 2>&1
     if !errorlevel! equ 0 (
         set "READY=1"
         goto :ready

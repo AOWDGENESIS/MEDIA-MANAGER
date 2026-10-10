@@ -20,6 +20,17 @@ $apiError = Join-Path $env:RUNNER_TEMP 'genesis-inno-api-stderr.log'
 $apiOutput = Join-Path $env:RUNNER_TEMP 'genesis-inno-api-stdout.log'
 $testData = Join-Path $env:RUNNER_TEMP 'genesis-smoke-data'
 $apiProcess = $null
+$startBat = Join-Path $installDir 'Start-GenesisMediaManager.bat'
+
+function Stop-InstalledProcesses {
+    # Vor Update/Deinstallation nur die Prozesse DIESER Testinstallation
+    # beenden; keine fremden lokalen Python-Services stoppen.
+    Get-Process -Name GenesisMediaManager -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-CimInstance Win32_Process -Filter "Name = 'pythonw.exe' OR Name = 'python.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like "*$installDir*backend*run_api.py*" } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+}
 
 if (-not (Test-Path $setup)) { throw "Setup-EXE fehlt: $setup" }
 if (Test-Path $installDir) { throw "CI-Test braucht ein frisches Benutzerprofil: $installDir existiert bereits" }
@@ -69,8 +80,30 @@ try {
     if (-not $apiProcess.WaitForExit(10000)) { throw 'Core-Service konnte nicht beendet werden' }
     $apiProcess = $null
 
+    # Entscheidend fuer den Nutzer: den per Startmenue verlinkten Batch-Pfad
+    # pruefen, nicht nur run_api.py direkt. Die WPF-UI kann auf einem
+    # CI-Runner nicht visuell abgenommen werden.
+    Write-Host 'Starte den mitgelieferten Start-GenesisMediaManager.bat'
+    & $env:ComSpec /d /c ('"' + $startBat + '"')
+    if ($LASTEXITCODE -ne 0) { throw "Startskript: Exit-Code $LASTEXITCODE" }
+    $startedHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5
+    if ($startedHealth.status -ne 'ok') { throw 'Startskript hat den Core-Service nicht gestartet' }
+    Write-Host 'Startskript: lokale Core-API antwortet mit status ok'
+    Stop-InstalledProcesses
+
     New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
     Set-Content -Path $sentinel -Value 'Mediathek-Daten erhalten'
+
+    # Ein zweiter Setup-Lauf muss als Update funktionieren, ohne die unter
+    # %APPDATA% gespeicherten Nutzerdaten oder den Uninstaller zu beschaedigen.
+    Write-Host 'Pruefe erneute Installation (Update)'
+    $updateProcess = Start-Process -FilePath $setup -ArgumentList @(
+        '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + $log + '"')
+    ) -Wait -PassThru
+    if ($updateProcess.ExitCode -ne 0) { throw "Update: Exit-Code $($updateProcess.ExitCode)" }
+    if (-not (Test-Path $python)) { throw 'Python-Umgebung nach Update nicht vorhanden' }
+    if (-not (Test-Path $sentinel)) { throw 'Update hat Benutzerdaten geloescht' }
+
     Write-Host 'Deinstalliere Inno-Setup-Paket'
     $uninstallProcess = Start-Process -FilePath $uninstall -ArgumentList @(
         '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
@@ -79,15 +112,18 @@ try {
     if (Test-Path $python) { throw 'Uninstaller hat die Python-Umgebung nicht entfernt' }
     if (Test-Path (Join-Path $installDir 'client\GenesisMediaManager.exe')) { throw 'Uninstaller hat den Client nicht entfernt' }
     if (-not (Test-Path $sentinel)) { throw 'Uninstaller hat Benutzerdaten geloescht' }
-    Write-Host 'Smoke-Test erfolgreich: Installation, Core-API, Deinstallation, Benutzerdaten erhalten.'
+    Write-Host 'Smoke-Test erfolgreich: Installation, Startskript, Core-API, Update, Deinstallation, Benutzerdaten erhalten.'
 } catch {
     Write-Host "::error::$($_.Exception.Message)"
     if (Test-Path $log) { Get-Content $log -Tail 70 }
     if (Test-Path $apiError) { Get-Content $apiError -Tail 70 }
+    $coreLog = Join-Path $dataDir 'core-service.log'
+    if (Test-Path $coreLog) { Get-Content $coreLog -Tail 70 }
     throw
 } finally {
     if ($apiProcess -and -not $apiProcess.HasExited) {
         Stop-Process -Id $apiProcess.Id -Force -ErrorAction SilentlyContinue
     }
+    Stop-InstalledProcesses
     Remove-Item $sentinel -ErrorAction SilentlyContinue
 }

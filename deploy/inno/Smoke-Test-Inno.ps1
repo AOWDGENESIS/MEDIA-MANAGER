@@ -83,6 +83,9 @@ try {
     Stop-Process -Id $apiProcess.Id -Force -ErrorAction SilentlyContinue
     if (-not $apiProcess.WaitForExit(10000)) { throw 'Core-Service konnte nicht beendet werden' }
     $apiProcess = $null
+    # Windows-venv-Python kann beim Start noch einen Interpreter-Kindprozess
+    # erzeugen; den ebenfalls beenden, bevor der eigentliche Launcher laeuft.
+    Stop-InstalledProcesses
 
     # Entscheidend fuer den Nutzer: den per Startmenue verlinkten Batch-Pfad
     # pruefen, nicht nur run_api.py direkt. Die WPF-UI kann auf einem
@@ -97,17 +100,21 @@ try {
     # Zweiter Doppelklick bei laufendem Service darf keinen zweiten
     # pythonw-Prozess starten oder dessen Logdatei ueberschreiben.
     $coreBefore = @(Get-InstalledCoreProcesses)
-    if ($coreBefore.Count -ne 1) { throw "Erwartet wurde ein installierter Core-Prozess, gefunden: $($coreBefore.Count)" }
+    if ($coreBefore.Count -lt 1) { throw 'Kein installierter Core-Prozess nach erstem Start gefunden' }
+    # venv-Launcher + Interpreter koennen als zwei Windows-Prozesse sichtbar
+    # sein. Entscheidend ist, dass beim Zweitstart KEINE neuen PIDs entstehen.
+    $pidsBefore = @(($coreBefore | ForEach-Object { $_.ProcessId }) | Sort-Object)
+    Write-Host "Core-PIDs vor Zweitstart: $($pidsBefore -join ', ')"
     $secondStartOutput = @(& $env:ComSpec /d /c ('"' + $startBat + '"'))
     if ($LASTEXITCODE -ne 0) { throw "Zweiter Start: Exit-Code $LASTEXITCODE" }
     if (($secondStartOutput -join "`n") -notmatch 'Core-Service laeuft bereits') {
         throw "Zweiter Start hat den laufenden Core-Service nicht wiederverwendet: $($secondStartOutput -join ' ')"
     }
-    $coreAfter = @(Get-InstalledCoreProcesses)
-    if ($coreAfter.Count -ne 1 -or $coreAfter[0].ProcessId -ne $coreBefore[0].ProcessId) {
-        throw 'Zweiter Start hat den Core-Prozess ungewollt neu gestartet/dupliziert'
+    $pidsAfter = @((Get-InstalledCoreProcesses | ForEach-Object { $_.ProcessId }) | Sort-Object)
+    if (($pidsAfter -join ',') -ne ($pidsBefore -join ',')) {
+        throw "Zweiter Start hat die Core-Prozesse veraendert: vorher $($pidsBefore -join ',') / nachher $($pidsAfter -join ',')"
     }
-    Write-Host 'Zweiter Start: derselbe Core-Prozess bleibt aktiv'
+    Write-Host 'Zweiter Start: dieselben Core-Prozesse bleiben aktiv'
     Stop-InstalledProcesses
 
     New-Item -ItemType Directory -Force -Path $dataDir | Out-Null

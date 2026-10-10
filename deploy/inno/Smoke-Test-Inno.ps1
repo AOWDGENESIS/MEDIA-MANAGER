@@ -97,6 +97,28 @@ try {
     if ($startedHealth.status -ne 'ok') { throw 'Startskript hat den Core-Service nicht gestartet' }
     Write-Host 'Startskript: lokale Core-API antwortet mit status ok'
 
+    # Die API allein beweist noch nicht, dass auch der WPF-Client startet.
+    # In CI ist keine visuelle Abnahme moeglich, wohl aber Prozess-Liveness
+    # und der eigene Crash-Log des Clients.
+    $clientExe = Join-Path $installDir 'client\GenesisMediaManager.exe'
+    $clientCrashLog = Join-Path $dataDir 'client-crash.log'
+    $clientReady = $false
+    for ($i = 0; $i -lt 10; $i++) {
+        if (Test-Path $clientCrashLog) { throw "Client hat einen Startfehler protokolliert: $clientCrashLog" }
+        $client = @(Get-Process -Name GenesisMediaManager -ErrorAction SilentlyContinue |
+            Where-Object { $_.Path -eq $clientExe })
+        if ($client.Count -gt 0) { $clientReady = $true; break }
+        Start-Sleep -Seconds 1
+    }
+    if (-not $clientReady) { throw 'Client-Prozess startet nach dem Launcher nicht' }
+    Start-Sleep -Seconds 2
+    $clientAlive = @(Get-Process -Name GenesisMediaManager -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -eq $clientExe })
+    if ((Test-Path $clientCrashLog) -or ($clientAlive.Count -eq 0)) {
+        throw 'Client-Prozess ist unmittelbar nach dem Start abgestuerzt/beendet'
+    }
+    Write-Host 'WPF-Client-Prozess gestartet und nach zwei Sekunden noch aktiv (keine visuelle Pruefung)'
+
     # Zweiter Doppelklick bei laufendem Service darf keinen zweiten
     # pythonw-Prozess starten oder dessen Logdatei ueberschreiben.
     $coreBefore = @(Get-InstalledCoreProcesses)
@@ -144,6 +166,8 @@ try {
     if (Test-Path $apiError) { Get-Content $apiError -Tail 70 }
     $coreLog = Join-Path $dataDir 'core-service.log'
     if (Test-Path $coreLog) { Get-Content $coreLog -Tail 70 }
+    $clientCrashLog = Join-Path $dataDir 'client-crash.log'
+    if (Test-Path $clientCrashLog) { Get-Content $clientCrashLog -Tail 70 }
     throw
 } finally {
     if ($apiProcess -and -not $apiProcess.HasExited) {

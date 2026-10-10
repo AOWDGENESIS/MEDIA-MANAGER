@@ -1,4 +1,20 @@
 
+## 2026-10-10 (Fortsetzung 25) – Inno-Setup-Startweg und Update zusaetzlich geprueft
+
+GitHub-Actions-Lauf
+https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38039292835
+ist erfolgreich. Der Windows-Smoke-Test prueft jetzt zusaetzlich zur
+Erstinstallation auch das tatsaechliche `Start-GenesisMediaManager.bat`,
+welches die Startmenue-Verknuepfung aufruft: die dadurch gestartete
+Core-API beantwortete `/health` mit `status: ok`. Anschliessend wurde
+die Setup-EXE erneut als Update installiert und danach deinstalliert;
+die virtuelle Python-Umgebung war nach dem Update vorhanden, nach der
+Deinstallation entfernt; Test-Benutzerdaten blieben bei Update und
+Deinstallation erhalten. Artefakt `GenesisMediaManager-Inno-Setup-exe`
+ist im erfolgreichen Lauf verfuegbar. Die WPF-Oberflaeche wurde im
+headless CI nicht visuell geprueft; auf dem Nutzer-PC bleibt eine
+interaktive Abnahme erforderlich.
+
 ## 2026-10-10 (Fortsetzung 24) – Inno-Setup-EXE auf Windows installiert und getestet
 
 Auf den Wunsch nach einer `.iss` hin entstand

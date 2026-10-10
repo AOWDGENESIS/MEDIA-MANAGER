@@ -1,4 +1,34 @@
 
+## 2026-10-10 (Fortsetzung 24) – Inno-Setup-EXE auf Windows installiert und getestet
+
+Auf den Wunsch nach einer `.iss` hin entstand
+`deploy/inno/GenesisMediaManager.iss` (Inno Setup 6) samt
+`deploy/installer/Start-GenesisMediaManager.bat` als gemeinsames Startskript
+fuer ZIP/PowerShell, MSI und Inno. `Build-Package.ps1 -BuildInno` erzeugt
+`build/GenesisMediaManager-Inno-Setup.exe`. Python 3.11+ und Internet fuer
+die Erstinstallation der Core-Abhaengigkeiten bleiben erforderlich.
+
+**CI-Verifikation:** GitHub-Actions-Lauf
+https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38037969127
+war erfolgreich. Auf dem Windows-Runner wurde nicht nur die `.iss`
+kompiliert, sondern die fertige Setup-EXE im Benutzerprofil silent
+installiert: Client, Backend, Startskript, Python-venv und deren
+Kernabhaengigkeiten vorhanden; der installierte Core-Service lieferte
+ueber echtes HTTP `GET /health` den Status `ok`. Danach wurde per
+Inno-Uninstaller deinstalliert: Client und venv entfernt, Test-Nutzerdaten
+unter `%APPDATA%\GenesisMediaManager` blieben erhalten. Die EXE liegt im
+Artefakt `GenesisMediaManager-Inno-Setup-exe` des Laufs (GitHub-Login zum
+Herunterladen kann erforderlich sein). Der erste Smoke-Test-Lauf
+`38037811099` scheiterte am Testskript (`&` wartet unter PowerShell bei
+einer GUI-EXE nicht verlaesslich / lieferte keinen Exit-Code), nicht am
+Installer; mit `Start-Process -Wait -PassThru` wurde dies behoben.
+
+**Grenzen:** Keine visuelle WPF-Abnahme in einer interaktiven Windows-Sitzung,
+kein Test auf dem PC des Nutzers; die Setup-EXE ist nicht digital signiert.
+Fruehere Aussagen "Windows-Installation nicht getestet" gelten fuer die
+vorherigen ZIP-/MSI-Pakete; die neue Inno-Variante wurde automatisiert auf
+Windows installiert, gestartet (Core) und deinstalliert.
+
 ## 2026-10-09 (Fortsetzung 11) - Installationspaket über GitHub Actions gebaut: drei Build-Fehler behoben
 
 Ziel war eine installierbare Windows-Datei. Der Installer entsteht nur auf einem

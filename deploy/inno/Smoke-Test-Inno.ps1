@@ -105,11 +105,10 @@ try {
     # sein. Entscheidend ist, dass beim Zweitstart KEINE neuen PIDs entstehen.
     $pidsBefore = @(($coreBefore | ForEach-Object { $_.ProcessId }) | Sort-Object)
     Write-Host "Core-PIDs vor Zweitstart: $($pidsBefore -join ', ')"
-    $secondStartOutput = @(& $env:ComSpec /d /c ('"' + $startBat + '"'))
+    # Nicht per @(...)-Pipeline auffangen: von cmd gestartete GUI-Prozesse
+    # koennen die geerbte stdout-Pipe offen halten und CI blockieren.
+    & $env:ComSpec /d /c ('"' + $startBat + '"')
     if ($LASTEXITCODE -ne 0) { throw "Zweiter Start: Exit-Code $LASTEXITCODE" }
-    if (($secondStartOutput -join "`n") -notmatch 'Core-Service laeuft bereits') {
-        throw "Zweiter Start hat den laufenden Core-Service nicht wiederverwendet: $($secondStartOutput -join ' ')"
-    }
     $pidsAfter = @((Get-InstalledCoreProcesses | ForEach-Object { $_.ProcessId }) | Sort-Object)
     if (($pidsAfter -join ',') -ne ($pidsBefore -join ',')) {
         throw "Zweiter Start hat die Core-Prozesse veraendert: vorher $($pidsBefore -join ',') / nachher $($pidsAfter -join ',')"

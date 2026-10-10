@@ -31,8 +31,20 @@ jobs:
       - name: .NET-Client-Tests unter Windows
         shell: pwsh
         run: |
-          dotnet test ui-windows-dotnet/GenesisMediaManager.Client.Tests/GenesisMediaManager.Client.Tests.csproj -c Release -p:EnableWindowsTargeting=true
-          if ($LASTEXITCODE -ne 0) { throw '.NET-Client-Tests fehlgeschlagen' }
+          $log = Join-Path $env:RUNNER_TEMP 'dotnet-tests.log'
+          dotnet test ui-windows-dotnet/GenesisMediaManager.Client.Tests/GenesisMediaManager.Client.Tests.csproj -c Release -p:EnableWindowsTargeting=true *> $log
+          $testExit = $LASTEXITCODE
+          Get-Content $log -Tail 100
+          if ($testExit -ne 0) {
+            # Die Voll-Logs liegen ausserhalb der Sandbox auf einem nicht
+            # erreichbaren Host; so werden Fehler ueber die API sichtbar.
+            Select-String -Path $log -Pattern 'error|failed|failure|exception|Fehler|fehlgeschlagen' |
+              Select-Object -Last 25 | ForEach-Object {
+                $msg = ($_.Line -replace '%', '%25') -replace '\r|\n', ' '
+                Write-Host "::error::$msg"
+              }
+            throw ".NET-Client-Tests fehlgeschlagen (Exit-Code $testExit)"
+          }
 
       - name: WiX-Toolset-CLI installieren
         run: dotnet tool install --global wix --version 5.0.2

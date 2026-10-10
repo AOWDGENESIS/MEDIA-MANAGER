@@ -1,4 +1,34 @@
 
+## 2026-10-10 (Fortsetzung 28) – Windows-Tests entdeckten echten UI-Start-Deadlock
+
+Der zusaetzliche Windows-CI-Check zeigte zunaechst vier .NET-Testfehler:
+Prozent-Format `0%` rundete `0.125` unter Windows auf `13%` statt Pythons
+`12%` (Linux verhielt sich anders), und xUnit konnte `InlineData(0)`
+nicht automatisch von `int` zu `long?` konvertieren. Prozent-Rundung
+ist jetzt explizit `MidpointRounding.ToEven`, der Testwert `0L`;
+Windows-.NET-Tests laufen seitdem gruen.
+
+Wichtiger: Der installierte Client-Prozess lebte zwar, erzeugte aber
+**kein Hauptfenster-Handle**. Ursache war ein Sync-over-Async-Deadlock:
+`MainWindow.ApplyLanguageFromSettings()` blockiert den UI-Thread mit
+`GetSettingsAsync().GetAwaiter().GetResult()`. Zwar nutzte
+`GetSettingsAsync` bereits `ConfigureAwait(false)`, der darunterliegende
+`ApiErrorDetailHandler.SendAsync` tat es NICHT und wartete beim Rueckruf
+auf den blockierten UI-Dispatcher. Beide `await`s im Handler setzen nun
+`ConfigureAwait(false)`; der Windows-Check verlangt jetzt ein echtes
+`MainWindowHandle` statt nur eines laufenden Prozesses.
+
+**Erfolgreicher Lauf:**
+https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38086149912
+(.NET-Tests, Paketbau, Inno-Installation, Core-API, Startskript,
+WPF-Hauptfenster-Handle, Zweitstart, Update, Deinstallation, Artefakte).
+Der CI-Nachweis eines HWND ist staerker als blosses Prozessleben, ersetzt
+aber weiterhin KEINE visuelle Kontrolle von Farben/Layout/Funktionen
+auf einem interaktiven Nutzer-Desktop. Die vorherige Aussage aus
+Fortsetzung 27 ("Client-Prozess bleibt aktiv") war fuer eine erfolgreiche
+Fensteranzeige nicht ausreichend; dies wurde hier tatsaechlich gefunden
+und behoben.
+
 ## 2026-10-10 (Fortsetzung 27) – Installierter WPF-Client startet als Prozess
 
 Der Inno-Setup-Smoke-Test prueft jetzt ausser dem Core-Service den vom

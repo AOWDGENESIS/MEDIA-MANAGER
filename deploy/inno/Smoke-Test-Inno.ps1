@@ -26,8 +26,12 @@ if (Test-Path $installDir) { throw "CI-Test braucht ein frisches Benutzerprofil:
 
 try {
     Write-Host "Installiere Inno-Setup-EXE: $setup"
-    & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/LOG=$log"
-    if ($LASTEXITCODE -ne 0) { throw "Setup-EXE: Exit-Code $LASTEXITCODE" }
+    # PowerShell wartet bei GUI-EXEs mit dem Call-Operator nicht immer auf
+    # das Prozessende; -Wait/-PassThru liefert den echten Installer-Code.
+    $installProcess = Start-Process -FilePath $setup -ArgumentList @(
+        '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + $log + '"')
+    ) -Wait -PassThru
+    if ($installProcess.ExitCode -ne 0) { throw "Setup-EXE: Exit-Code $($installProcess.ExitCode)" }
 
     foreach ($path in @(
         (Join-Path $installDir 'client\GenesisMediaManager.exe'),
@@ -68,8 +72,10 @@ try {
     New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
     Set-Content -Path $sentinel -Value 'Mediathek-Daten erhalten'
     Write-Host 'Deinstalliere Inno-Setup-Paket'
-    & $uninstall /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
-    if ($LASTEXITCODE -ne 0) { throw "Deinstallation: Exit-Code $LASTEXITCODE" }
+    $uninstallProcess = Start-Process -FilePath $uninstall -ArgumentList @(
+        '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+    ) -Wait -PassThru
+    if ($uninstallProcess.ExitCode -ne 0) { throw "Deinstallation: Exit-Code $($uninstallProcess.ExitCode)" }
     if (Test-Path $python) { throw 'Uninstaller hat die Python-Umgebung nicht entfernt' }
     if (Test-Path (Join-Path $installDir 'client\GenesisMediaManager.exe')) { throw 'Uninstaller hat den Client nicht entfernt' }
     if (-not (Test-Path $sentinel)) { throw 'Uninstaller hat Benutzerdaten geloescht' }

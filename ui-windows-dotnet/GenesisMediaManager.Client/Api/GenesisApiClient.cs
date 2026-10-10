@@ -212,12 +212,18 @@ public sealed partial class GenesisApiClient : IDisposable
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var response = await base.SendAsync(request, cancellationToken);
+            // Der Fenster-Konstruktor ruft GetSettingsAsync synchron auf dem
+            // UI-Thread auf. Auch DIESER verschachtelte Handler darf bei
+            // seinen awaits keinen Dispatcher-Kontext festhalten, sonst
+            // bleibt MainWindow vor Show() haengen (kein HWND, kein Crash).
+            var response = await base.SendAsync(request, cancellationToken)
+                .ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
                 return response;
             }
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken)
+                .ConfigureAwait(false);
             throw BuildApiExceptionFromBody(body, (int)response.StatusCode, response.ReasonPhrase);
         }
     }

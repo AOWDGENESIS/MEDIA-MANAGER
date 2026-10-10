@@ -39,7 +39,8 @@ public class DownloadCenterSupportTests
 
     [Theory]
     [InlineData(null, "-")]
-    [InlineData(0, "-")]
+    // xUnit auf Windows konvertiert ein Int32-Attribut nicht implizit nach long?.
+    [InlineData(0L, "-")]
     public void FormatSize_NullOrZero_ReturnsDash(long? numBytes, string expected)
     {
         Assert.Equal(expected, DownloadCenterSupport.FormatSize(numBytes));

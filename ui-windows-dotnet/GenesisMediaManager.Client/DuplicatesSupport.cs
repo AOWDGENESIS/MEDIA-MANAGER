@@ -18,6 +18,9 @@ public static class DuplicatesSupport
     /// "87 %" mit Leerzeichen unter deutschem Windows) - damit wich die
     /// Anzeige je nach Systemkultur von der Python-Referenz-UI ab.
     /// </summary>
+    // Custom-Format "0%" rundet exakte Halbwerte auf Windows anders als
+    // auf Linux. Python-Paritaet erfordert explizites Half-to-even.
     public static string FormatConfidence(double confidence) =>
-        confidence.ToString("0%", System.Globalization.CultureInfo.InvariantCulture);
+        Math.Round(confidence * 100, 0, MidpointRounding.ToEven)
+            .ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "%";
 }

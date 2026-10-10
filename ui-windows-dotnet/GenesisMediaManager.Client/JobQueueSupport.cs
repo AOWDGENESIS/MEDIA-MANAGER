@@ -12,8 +12,8 @@ public static class JobQueueSupport
     /// <c>job_queue_view.py::_reload</c>:
     /// <c>f"{processed}/{total} ({processed / total:.0%})"</c> wenn
     /// <c>total &gt; 0</c>, sonst der "unbekannt"-Text. Der Prozentanteil
-    /// laeuft ueber <see cref="AiCenterSupport.FormatScore"/> (Custom-
-    /// Format "0%", InvariantCulture, "half to even" wie Python): das
+    /// laeuft ueber <see cref="AiCenterSupport.FormatScore"/> (explizites
+    /// Half-to-even, InvariantCulture wie Python): das
     /// vorher in der Ansicht verwendete Standardformat <c>P0</c> ist
     /// kulturabhaengig und zeigte unter deutschem Windows "42 %" statt
     /// Pythons "42%" (sechster Befund der Locale-Fehlerklasse).

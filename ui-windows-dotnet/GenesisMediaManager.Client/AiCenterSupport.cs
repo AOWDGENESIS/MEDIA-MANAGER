@@ -20,6 +20,11 @@ public static class AiCenterSupport
     /// bleiben bewusst getrennt, gemaess ADR-0009 "geteilt wird nur das
     /// Datenformat, nicht der Code").
     /// </summary>
+    // .NETs Custom-Format "0%" rundet halbe Werte je nach Runtime/OS
+    // unterschiedlich (0.125 wird auf Windows zu "13%", auf Linux zu
+    // "12%"). Explizites MidpointRounding.ToEven ist plattformstabil und
+    // entspricht dem Format der Python-Referenz bei exakten Halbwerten.
     public static string FormatScore(double score) =>
-        score.ToString("0%", System.Globalization.CultureInfo.InvariantCulture);
+        Math.Round(score * 100, 0, MidpointRounding.ToEven)
+            .ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "%";
 }

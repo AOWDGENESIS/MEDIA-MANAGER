@@ -70,7 +70,9 @@ if (-not $PythonExe) {
     Write-Host ""
     Write-Host "    Der .NET-Client laesst sich bereits oeffnen, zeigt aber ohne" -ForegroundColor Yellow
     Write-Host "    laufenden Core-Service keine Daten an." -ForegroundColor Yellow
-    exit 0
+    # Ohne Python ist die Einrichtung nicht erfolgreich: Installer duerfen
+    # den Client nicht als startbereit melden.
+    exit 1
 }
 Write-Ok "Gefunden: $PythonExe"
 

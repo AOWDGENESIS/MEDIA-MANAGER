@@ -30,9 +30,13 @@ zusammen" + "echtes MSI").
     Verknuepfungen und den Registry-Eintrag; laesst Mediathek-Daten/
     Einstellungen unter `%APPDATA%\GenesisMediaManager` bewusst
     unangetastet (kein stiller Datenverlust).
-- **`wix/Product.wxs`** — das echte WiX-v5-Installationsprojekt fuer ein
-  klassisches MSI (Programme-und-Features-Eintrag, Start-/
-  Desktop-Verknuepfungen, Deinstallation ueber die Systemsteuerung).
+- **`wix/Product.wxs`** — das WiX-v5-Installationsprojekt fuer ein MSI.
+- **`inno/GenesisMediaManager.iss`** — Inno-Setup-6-Skript fuer eine
+  Setup-EXE (x64, ohne Administratorrechte). Erwartet den von
+  `Build-Package.ps1` erzeugten Ordner `build/package` mit dem gebauten
+  Client und Backend; die `.iss` allein enthaelt keine Programmdateien.
+  Sie verwendet dasselbe `Setup-PythonRuntime.ps1` wie ZIP/MSI und zeigt
+  den Programmstart erst nach erfolgreicher Python-Einrichtung an.
 
 ## Wichtige Einschraenkung: MSI kann NICHT in der Linux-Sandbox gebaut werden
 
@@ -61,6 +65,25 @@ dotnet tool install --global wix --version 5.0.2
 wix extension add -g WixToolset.Util.wixext/5.0.2
 ./deploy/Build-Package.ps1 -BuildMsi
 ```
+
+## Inno-Setup-EXE bauen (Windows)
+
+Inno Setup 6 und .NET SDK 8 unter Windows installieren. Im Repo-Root:
+
+```powershell
+./deploy/Build-Package.ps1 -BuildInno
+```
+
+Ergebnis: `build/GenesisMediaManager-Inno-Setup.exe`. Fuer einen manuellen
+Kompilierungslauf mit Inno Setup zuerst
+`./deploy/Build-Package.ps1 -SkipZip` ausfuehren; danach
+`ISCC.exe deploy\inno\GenesisMediaManager.iss`. Der Windows-CI-Workflow
+baut und veroeffentlicht die Setup-EXE ebenfalls als Artefakt.
+**Python 3.11+ und Internet** sind auf dem Ziel-PC fuer die einmalige
+Einrichtung des lokalen Core-Service noetig. Eine bestehende MSI- oder
+PowerShell-Installation bitte vorher deinstallieren (gleicher Zielordner,
+unterschiedliche Deinstallationsmechanismen); Nutzerdaten bleiben erhalten.
+Setup ist derzeit nicht digital signiert.
 
 ## Lokal bauen OHNE MSI (funktioniert auch in der Linux-Sandbox)
 

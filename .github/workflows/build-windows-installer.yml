@@ -34,14 +34,23 @@ jobs:
       - name: WiX-Util-Erweiterung installieren
         run: wix extension add WixToolset.Util.wixext/5.0.2
 
-      - name: Paket bauen (ZIP + MSI)
+      - name: Inno Setup 6 bereitstellen
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup 6 konnte nicht installiert werden.' }
+          }
+
+      - name: Paket bauen (ZIP + MSI + Setup-EXE)
         shell: pwsh
         run: |
           # Lauf protokollieren. Bei Fehlern werden die Fehlerzeilen als
           # GitHub-Annotationen ausgegeben, damit sie ohne Log-Download sichtbar sind.
           $log = Join-Path $env:RUNNER_TEMP "paketbau.log"
           try {
-            ./deploy/Build-Package.ps1 -BuildMsi *>&1 | Tee-Object -FilePath $log
+            ./deploy/Build-Package.ps1 -BuildMsi -BuildInno *>&1 | Tee-Object -FilePath $log
           } catch {
             $msg = ($_.Exception.Message -replace '[\r\n]+', ' ') -replace '%', '%25'
             Write-Host "::error::$msg"
@@ -65,4 +74,11 @@ jobs:
         with:
           name: GenesisMediaManager-Setup-msi
           path: build/package/GenesisMediaManager-Setup.msi
+          if-no-files-found: error
+
+      - name: Inno-Setup-EXE als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenesisMediaManager-Inno-Setup-exe
+          path: build/GenesisMediaManager-Inno-Setup.exe
           if-no-files-found: error

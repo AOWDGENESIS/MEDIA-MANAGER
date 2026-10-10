@@ -23,6 +23,9 @@
     Baut zusaetzlich das MSI mit dem WiX-Toolset (`dotnet tool install -g
     wix` muss vorhanden sein). Funktioniert nur unter echtem Windows.
 
+.PARAMETER BuildInno
+    Baut zusaetzlich eine Setup-EXE mit Inno Setup 6 (ISCC.exe unter Windows).
+
 .PARAMETER SkipZip
     Erzeugt kein ZIP-Archiv, nur den entpackten Paketordner.
 #>
@@ -30,6 +33,7 @@
 param(
     [string]$OutputDir = (Join-Path $PSScriptRoot "..\build\package"),
     [switch]$BuildMsi,
+    [switch]$BuildInno,
     [switch]$SkipZip
 )
 
@@ -170,10 +174,33 @@ if ($BuildMsi) {
         -d "BackendSourceDir=$(Join-Path $OutputDir 'backend')" `
         -d "I18nSourceDir=$(Join-Path $OutputDir 'i18n')" `
         -d "InstallerSourceDir=$(Join-Path $OutputDir 'installer')" `
-        -d "StartScriptSource=$(Join-Path $PSScriptRoot 'installer\Install-GenesisMediaManager.ps1')" `
+        -d "StartScriptSource=$(Join-Path $PSScriptRoot 'installer\Start-GenesisMediaManager.bat')" `
         -o $msiOut
     if ($LASTEXITCODE -ne 0) { throw "wix build fehlgeschlagen" }
     Write-Ok "MSI gebaut: $msiOut"
+}
+
+# --- 5b) Optional: Setup-EXE aus der .iss bauen (nur Windows) --------------
+if ($BuildInno) {
+    Write-Step "Baue Setup-EXE mit Inno Setup 6"
+    $defaultPackageDir = [IO.Path]::GetFullPath((Join-Path $RepoRoot "build\package"))
+    if ([IO.Path]::GetFullPath([string]$OutputDir) -ne $defaultPackageDir) {
+        throw "-BuildInno erwartet den Standard-Paketordner '$defaultPackageDir' (die .iss referenziert build/package)."
+    }
+    $isccCommand = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+    if ($isccCommand) {
+        $iscc = $isccCommand.Source
+    } else {
+        $iscc = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) "Inno Setup 6\ISCC.exe"
+    }
+    if (-not (Test-Path $iscc)) {
+        throw "ISCC.exe nicht gefunden. Inno Setup 6 auf Windows installieren und dann -BuildInno erneut ausfuehren."
+    }
+    & $iscc (Join-Path $PSScriptRoot "inno\GenesisMediaManager.iss")
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup (ISCC.exe) fehlgeschlagen" }
+    $innoOut = Join-Path $RepoRoot "build\GenesisMediaManager-Inno-Setup.exe"
+    if (-not (Test-Path $innoOut)) { throw "ISCC.exe meldete Erfolg, aber die Setup-EXE fehlt: $innoOut" }
+    Write-Ok "Setup-EXE gebaut: $innoOut"
 }
 
 # --- 6) ZIP erzeugen ---------------------------------------------------------

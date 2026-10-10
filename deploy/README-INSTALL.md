@@ -56,6 +56,21 @@ workflow", danach als Artefakt herunterladen) — oder manuell auf einem
 Windows-Rechner mit installiertem WiX-Toolset über
 `deploy/Build-Package.ps1 -BuildMsi`.
 
+## Alternative: Setup-EXE mit Inno Setup
+
+Das Projekt enthaelt auch `deploy/inno/GenesisMediaManager.iss` fuer eine
+klassische Windows-Setup-EXE. Ein fertiger Windows-CI-Build liegt im
+Actions-Lauf als Artefakt `GenesisMediaManager-Inno-Setup-exe` (die
+Artefakt-ZIP entpacken und die enthaltene `.exe` ausfuehren). Die `.iss`
+allein ist **keine** installierbare Datei: sie braucht das mit
+`deploy/Build-Package.ps1` erstellte Paket mit dem gebauten Client.
+Python 3.11+ (auf PATH) und einmalig Internet fuer pip sind weiterhin
+noetig. Die Setup-EXE ist nicht signiert; Windows kann eine
+SmartScreen-Warnung anzeigen. Bestehende MSI- oder PowerShell-Installationen
+vorher ueber Windows-Einstellungen > Apps deinstallieren, weil sie denselben
+Programmordner mit unterschiedlichen Deinstallationsmechanismen benutzen.
+Die Benutzerdaten unter `%APPDATA%\GenesisMediaManager` bleiben erhalten.
+
 ## Falls etwas nicht funktioniert
 
 - **"... ist nicht digital signiert. Sie können dieses Skript im aktuellen

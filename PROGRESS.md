@@ -1,4 +1,19 @@
 
+## 2026-10-10 (Fortsetzung 27) – Installierter WPF-Client startet als Prozess
+
+Der Inno-Setup-Smoke-Test prueft jetzt ausser dem Core-Service den vom
+Launcher gestarteten **installierten WPF-Client-Prozess**: Pfad entspricht
+der EXE unter `%LOCALAPPDATA%\Programs\GenesisMediaManager\client`, der
+Prozess bleibt nach dem Start bestehen und `client-crash.log` entsteht
+nicht. GitHub-Actions-Lauf
+https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38082946228
+ist erfolgreich; Setup-EXE, MSI und ZIP wurden neu als Artefakte gebaut.
+Damit sind Installation, Startskript, Client-Prozess, Core-API, Zweitstart,
+Update und Deinstallation automatisiert auf Windows geprueft.
+**Nicht geprueft** ist die sichtbare/bedienbare WPF-Oberflaeche in einer
+interaktiven Desktopsitzung des Nutzer-PCs; der CI-Runner kann keine
+verbindliche visuelle Abnahme ersetzen.
+
 ## 2026-10-10 (Fortsetzung 26) – Zweitstart des Installers/Launchers
 
 Der gemeinsame Launcher `deploy/installer/Start-GenesisMediaManager.bat`

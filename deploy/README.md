@@ -78,7 +78,10 @@ Ergebnis: `build/GenesisMediaManager-Inno-Setup.exe`. Fuer einen manuellen
 Kompilierungslauf mit Inno Setup zuerst
 `./deploy/Build-Package.ps1 -SkipZip` ausfuehren; danach
 `ISCC.exe deploy\inno\GenesisMediaManager.iss`. Der Windows-CI-Workflow
-baut und veroeffentlicht die Setup-EXE ebenfalls als Artefakt.
+baut und veroeffentlicht die Setup-EXE ebenfalls als Artefakt. Der
+Windows-CI-Smoke-Test installiert sie im Benutzerprofil, prueft die lokale
+Core-API und deinstalliert sie; er ersetzt keinen visuellen GUI-Test auf
+einem echten Desktop-PC.
 **Python 3.11+ und Internet** sind auf dem Ziel-PC fuer die einmalige
 Einrichtung des lokalen Core-Service noetig. Eine bestehende MSI- oder
 PowerShell-Installation bitte vorher deinstallieren (gleicher Zielordner,

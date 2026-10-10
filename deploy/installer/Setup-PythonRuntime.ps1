@@ -40,7 +40,9 @@ function Write-Warn2 { param([string]$Message) Write-Host "    WARNUNG: $Message
 
 Write-Step "Suche installiertes Python (3.11 oder neuer) fuer den Core-Service"
 $PythonExe = $null
-foreach ($candidate in @("py", "python", "python3")) {
+# Ein explizit auf PATH eingerichtetes Python hat Vorrang vor dem
+# Windows-py-Launcher (dessen Standardversion kann eine andere sein).
+foreach ($candidate in @("python", "py", "python3")) {
     $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
     if (-not $cmd) { continue }
     try {

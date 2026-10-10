@@ -62,6 +62,16 @@ jobs:
             exit 1
           }
 
+      - name: Python 3.11 fuer den Installations-Smoke-Test bereitstellen
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Inno-Setup-EXE installieren, Core pruefen und deinstallieren
+        shell: pwsh
+        timeout-minutes: 20
+        run: ./deploy/inno/Smoke-Test-Inno.ps1
+
       - name: ZIP als Artefakt hochladen
         uses: actions/upload-artifact@v4
         with:

@@ -1,4 +1,29 @@
 
+## 2026-10-10 (Fortsetzung 26) – Zweitstart des Installers/Launchers
+
+Der gemeinsame Launcher `deploy/installer/Start-GenesisMediaManager.bat`
+startete zuvor bei **jedem** Doppelklick einen weiteren `pythonw.exe`-Core:
+der zweite Prozess konnte Port 8420 nicht binden und das bestehende
+`core-service.log` wurde dabei ueberschrieben. Der Launcher prueft jetzt
+vor dem Start `/health` auf `status: ok` und verwendet einen bereits
+laufenden Core weiter. Die Warte-Schleife prueft ebenfalls den echten
+GENESIS-Status statt irgendeines HTTP-200-Ergebnisses.
+
+Im Windows-CI-Smoke-Test werden nach dem ersten und zweiten Start die
+Prozess-IDs verglichen (ein Windows-venv kann Launcher und Interpreter als
+getrennte Prozesse anzeigen). **Lauf 38041326241 ist gruen**: Paketbau,
+Installation, direkter API-Test, Startskript beim ersten und zweiten
+Aufruf, Update, Deinstallation und Erhalt der Nutzerdaten. Artefakt
+`GenesisMediaManager-Inno-Setup-exe`:
+https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38041326241
+
+Zwischenlaeufe 38040545173/38040761172 scheiterten am neuen Testcode:
+zuerst wurde faelschlich genau ein statt eines stabilen venv-Prozessbaums
+erwartet, danach blockierte das Auffangen von Batch-stdout, weil der
+GUI-Kindprozess die Pipe offen hielt. Der Testcode wurde angepasst; der
+letzte Lauf ist erfolgreich. Der visuelle WPF-Desktoptest auf dem Nutzer-PC
+bleibt offen.
+
 ## 2026-10-10 (Fortsetzung 25) – Inno-Setup-Startweg und Update zusaetzlich geprueft
 
 GitHub-Actions-Lauf

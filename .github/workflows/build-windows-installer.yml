@@ -28,6 +28,12 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
+      - name: .NET-Client-Tests unter Windows
+        shell: pwsh
+        run: |
+          dotnet test ui-windows-dotnet/GenesisMediaManager.Client.Tests/GenesisMediaManager.Client.Tests.csproj -c Release -p:EnableWindowsTargeting=true
+          if ($LASTEXITCODE -ne 0) { throw '.NET-Client-Tests fehlgeschlagen' }
+
       - name: WiX-Toolset-CLI installieren
         run: dotnet tool install --global wix --version 5.0.2
 

@@ -117,7 +117,28 @@ try {
     if ((Test-Path $clientCrashLog) -or ($clientAlive.Count -eq 0)) {
         throw 'Client-Prozess ist unmittelbar nach dem Start abgestuerzt/beendet'
     }
-    Write-Host 'WPF-Client-Prozess gestartet und nach zwei Sekunden noch aktiv (keine visuelle Pruefung)'
+    Write-Host 'WPF-Client-Prozess gestartet und nach zwei Sekunden noch aktiv'
+
+    # MainWindow.Show() muss ausserdem ein echtes Top-Level-HWND erzeugen.
+    # Das ist staerker als reine Prozess-Liveness, aber keine Pruefung von
+    # Farben, Layout oder Bedienbarkeit auf dem Nutzer-Desktop.
+    $windowReady = $false
+    for ($i = 0; $i -lt 12; $i++) {
+        if (Test-Path $clientCrashLog) { throw "Client-Startfehler: $clientCrashLog" }
+        $windows = @(Get-Process -Name GenesisMediaManager -ErrorAction SilentlyContinue |
+            Where-Object { $_.Path -eq $clientExe })
+        foreach ($candidate in $windows) {
+            $candidate.Refresh()
+            if ($candidate.MainWindowHandle -ne [IntPtr]::Zero) {
+                $windowReady = $true
+                Write-Host "WPF-Hauptfenster angelegt (PID $($candidate.Id), HWND $($candidate.MainWindowHandle))"
+                break
+            }
+        }
+        if ($windowReady) { break }
+        Start-Sleep -Seconds 1
+    }
+    if (-not $windowReady) { throw 'WPF-Client-Prozess laeuft, aber kein Hauptfenster-Handle gefunden' }
 
     # Zweiter Doppelklick bei laufendem Service darf keinen zweiten
     # pythonw-Prozess starten oder dessen Logdatei ueberschreiben.

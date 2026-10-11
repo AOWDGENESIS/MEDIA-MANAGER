@@ -1,4 +1,24 @@
 
+## 2026-10-10 (Fortsetzung 29) – Regressionstest fuer den UI-Start-Deadlock
+
+`ApiStartupDeadlockTests.cs` prueft den echten verschachtelten
+`ApiErrorDetailHandler` ohne Netzwerk gegen zwei verzögerte Antworten:
+HTTP 200 und HTTP 401 mit nachgeladenem Fehlertext. Der Test blockiert
+absichtlich einen Thread mit nicht pumpendem `SynchronizationContext`,
+wie es der bisherige synchrone Einstellungen-Lesevorgang im WPF-
+Konstruktor tat. Erfolgs- und Fehlerpfad muessen ohne Deadlock fertig
+werden. Die xUnit1031-Analyzer-Warnung ist nur fuer die bewusst
+blockierende Testzeile dokumentiert unterdrueckt; normale Tests sollen
+weiterhin nicht synchron auf Tasks warten.
+
+**Windows-CI-Lauf**
+https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38178747638
+ist gruen: .NET-Tests inklusive der beiden neuen Regressionstest-Faelle,
+Paketbau, Inno-Installation, echte Core-API, WPF-Fenster-Handle, Zweitstart,
+Update/Deinstallation. Aktuelles Artefakt:
+`GenesisMediaManager-Inno-Setup-exe`. Nur die interaktive visuelle
+Abnahme auf dem Nutzer-PC bleibt offen.
+
 ## 2026-10-10 (Fortsetzung 28) – Windows-Tests entdeckten echten UI-Start-Deadlock
 
 Der zusaetzliche Windows-CI-Check zeigte zunaechst vier .NET-Testfehler:

@@ -71,8 +71,12 @@ public class ApiStartupDeadlockTests
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, "http://127.0.0.1/settings");
+                // xUnit1031 gilt fuer normale Tests; hier ist der BLOCKIERTE
+                // UI-Thread genau die Bedingung, deren Regression wir pruefen.
+#pragma warning disable xUnit1031
                 using var response = invoker.SendAsync(request, CancellationToken.None)
                     .GetAwaiter().GetResult();
+#pragma warning restore xUnit1031
                 status = response.StatusCode;
             }
             catch (Exception ex)

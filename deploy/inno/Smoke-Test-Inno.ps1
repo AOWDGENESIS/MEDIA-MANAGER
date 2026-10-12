@@ -87,6 +87,26 @@ try {
     # erzeugen; den ebenfalls beenden, bevor der eigentliche Launcher laeuft.
     Stop-InstalledProcesses
 
+    # Auch ohne Core muss das Hauptfenster zeitnah erscheinen. Die
+    # Sprach-Einstellung ist optional; bei Ausfall zeigt das Dashboard
+    # spaeter einen Fehler statt den UI-Thread zu blockieren.
+    Write-Host 'Pruefe Client-Fenster ohne laufende Core-API'
+    $offlineClient = Start-Process -FilePath (Join-Path $installDir 'client\GenesisMediaManager.exe') -PassThru
+    $offlineWindowReady = $false
+    for ($i = 0; $i -lt 10; $i++) {
+        $offlineClient.Refresh()
+        if ($offlineClient.HasExited) { throw 'Client ohne Core direkt nach Start beendet' }
+        if ($offlineClient.MainWindowHandle -ne [IntPtr]::Zero) {
+            $offlineWindowReady = $true
+            break
+        }
+        Start-Sleep -Seconds 1
+    }
+    if (-not $offlineWindowReady) { throw 'Client ohne Core hat nach zehn Sekunden kein Hauptfenster' }
+    Stop-Process -Id $offlineClient.Id -Force -ErrorAction SilentlyContinue
+    if (-not $offlineClient.WaitForExit(10000)) { throw 'Offline-Client konnte nicht beendet werden' }
+    $offlineClient = $null
+
     # Entscheidend fuer den Nutzer: den per Startmenue verlinkten Batch-Pfad
     # pruefen, nicht nur run_api.py direkt. Die WPF-UI kann auf einem
     # CI-Runner nicht visuell abgenommen werden.

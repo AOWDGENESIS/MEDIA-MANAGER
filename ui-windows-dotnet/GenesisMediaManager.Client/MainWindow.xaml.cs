@@ -126,13 +126,16 @@ public partial class MainWindow : Window
     /// Fehler, bleibt es beim Default (Deutsch) - kein Absturz, kein
     /// stiller Blockzustand (Prinzip "kein stiller Fehlschlag", aber auch
     /// kein harter Start-Abbruch nur wegen einer (noch) nicht laufenden
-    /// Core-API).
+    /// Core-API). Der rein kosmetische Startaufruf hat ein kurzes Limit,
+    /// damit ein offener, aber nicht antwortender Port das Fenster nicht
+    /// bis zum Standard-HTTP-Timeout (100 Sekunden) blockiert.
     /// </summary>
     private void ApplyLanguageFromSettings()
     {
         try
         {
-            var settings = _api.GetSettingsAsync().GetAwaiter().GetResult();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var settings = _api.GetSettingsAsync(timeout.Token).GetAwaiter().GetResult();
             if (settings?.General?.Language is { } language)
             {
                 Translator.ConfigureDefaultLanguage(language);

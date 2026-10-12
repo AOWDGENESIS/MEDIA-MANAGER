@@ -1,4 +1,23 @@
 
+## 2026-10-10 (Fortsetzung 30) – Fensterstart ohne Core-Service geprueft
+
+Die rein kosmetische Sprachabfrage beim Fensterstart nutzt jetzt einen
+3-Sekunden-CancellationToken statt des bis zu 100 Sekunden langen
+Standard-HTTP-Timeouts. Bei nicht erreichbarer Core-API bleibt es bei
+der Standardsprache; die spaetere Dashboard-Anfrage zeigt einen Fehler,
+statt den Fensteraufbau zu verhindern.
+
+Im Windows-Smoke-Test wird nach Installation zusaetzlich der Client
+**direkt ohne laufenden Core-Service** gestartet und ein Hauptfenster-
+Handle innerhalb von 10 Sekunden verlangt; danach laeuft wie bisher der
+normale Startskript-/Core-Test. Lauf
+https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38238761652
+war erfolgreich (.NET-Tests, Paketbau, Offline-Fensterstart, Core-API,
+Inno-Installation, Zweitstart, Update und Deinstallation). Der Test deckt
+"kein Core-Service" ab; ein absichtlich offener, aber nie antwortender
+Port wurde nicht separat simuliert. Fuer Farben, Layout und Bedienung
+bleibt die interaktive Abnahme auf dem Nutzer-PC erforderlich.
+
 ## 2026-10-10 (Fortsetzung 29) – Regressionstest fuer den UI-Start-Deadlock
 
 `ApiStartupDeadlockTests.cs` prueft den echten verschachtelten

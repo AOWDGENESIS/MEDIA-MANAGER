@@ -4898,3 +4898,22 @@ aus dieser Linux-Sandbox heraus nicht moeglich - das ist in
 TEST_REPORT.md explizit dokumentiert. Der Nutzer wird gebeten, nach dem
 naechsten Windows-Testlauf erneut Rueckmeldung zu geben (insbesondere zur
 Hoerbuecher-Tabellenansicht).
+
+## Fortsetzung 31 – Installer-Audit (13.10.2026)
+
+Auf Anfrage wurden Installations-, Update-, Deinstallations- und
+Konfliktpfade erneut geprüft. Die Korrekturen umfassen das gezielte Stoppen
+von App und Core vor Inno-Deinstallation, wechselseitige Installer-Sperren
+(Inno/ZIP/MSI), den unvollständigen ZIP-Erstlauf, korrigierte
+Installationshinweise und GitHub-Actions-Versionen mit Node 24.
+
+Der Windows-Lauf [38429366689](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38429366689)
+ist grün und hat 0 Check-Run-Annotationen. Er hat ZIP, MSI und Inno-EXE
+hochgeladen, .NET-Tests ausgeführt, die Inno-Installation mit laufender
+Core-API und Update/Deinstallation geprüft sowie **das MSI gegen eine
+bestehende Inno-Installation absichtlich abgewiesen**. Der ausführliche
+Befund einschließlich Voraussetzungen und verbleibender Testgrenzen steht
+in `docs/INSTALLER_AUDIT_2026-10-13.md`. Insbesondere wurden die normale
+MSI- und ZIP-Installation und die visuelle Darstellung auf dem PC des
+Nutzers nicht end-to-end abgenommen. Der Workspace bleibt bei ca. 11 MB
+und damit unter der vorgegebenen Grenze von 100 MB.

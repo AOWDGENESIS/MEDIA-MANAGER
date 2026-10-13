@@ -192,13 +192,24 @@ try {
     if (-not (Test-Path $python)) { throw 'Python-Umgebung nach Update nicht vorhanden' }
     if (-not (Test-Path $sentinel)) { throw 'Update hat Benutzerdaten geloescht' }
 
-    Write-Host 'Deinstalliere Inno-Setup-Paket'
+    # Anders als bisher: Bei der Deinstallation laufen App UND Core noch.
+    # Inno muss den Core vor dem Entfernen des nicht getrackten venv stoppen.
+    Write-Host 'Starte App/Core fuer den Deinstallations-Test erneut'
+    & $env:ComSpec /d /c ('"' + $startBat + '"')
+    if ($LASTEXITCODE -ne 0) { throw "Start vor Deinstallation: Exit-Code $LASTEXITCODE" }
+    $healthBeforeUninstall = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5
+    if ($healthBeforeUninstall.status -ne 'ok' -or @(Get-InstalledCoreProcesses).Count -lt 1) {
+        throw 'Core-Service laeuft vor dem Uninstall-Test nicht'
+    }
+
+    Write-Host 'Deinstalliere Inno-Setup-Paket bei laufender App und laufendem Core'
     $uninstallProcess = Start-Process -FilePath $uninstall -ArgumentList @(
         '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
     ) -Wait -PassThru
     if ($uninstallProcess.ExitCode -ne 0) { throw "Deinstallation: Exit-Code $($uninstallProcess.ExitCode)" }
     if (Test-Path $python) { throw 'Uninstaller hat die Python-Umgebung nicht entfernt' }
     if (Test-Path (Join-Path $installDir 'client\GenesisMediaManager.exe')) { throw 'Uninstaller hat den Client nicht entfernt' }
+    if (@(Get-InstalledCoreProcesses).Count -gt 0) { throw 'Uninstaller hat einen laufenden Core-Prozess hinterlassen' }
     if (-not (Test-Path $sentinel)) { throw 'Uninstaller hat Benutzerdaten geloescht' }
     Write-Host 'Smoke-Test erfolgreich: Installation, Startskript, Core-API, Update, Deinstallation, Benutzerdaten erhalten.'
 } catch {

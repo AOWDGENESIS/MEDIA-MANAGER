@@ -134,8 +134,22 @@ rem startet sie danach sofort.
 set "INSTALLDIR=%LOCALAPPDATA%\Programs\GenesisMediaManager"
 set "SCRIPTDIR=%~dp0"
 
-if exist "%INSTALLDIR%\client\GenesisMediaManager.exe" goto :start
+rem Unvollstaendige Installation (z.B. Python beim ersten Mal gefehlt)?
+rem Dann NICHT blind nur die Client-EXE starten, sondern reparieren.
+if not exist "%INSTALLDIR%\client\GenesisMediaManager.exe" goto :install
+if not exist "%INSTALLDIR%\backend\run_api.py" goto :install
+if not exist "%INSTALLDIR%\.venv\Scripts\pythonw.exe" goto :install
+if not exist "%INSTALLDIR%\Start-GenesisMediaManager.bat" goto :install
+goto :start
 
+:install
+rem Niemals den ZIP/PowerShell-Uninstaller ueber eine Inno-Installation
+rem schreiben (beide Installer verwenden denselben Zielordner).
+if exist "%INSTALLDIR%\unins000.exe" (
+    echo FEHLER: Inno-Installation unvollstaendig. Bitte die Setup-EXE erneut ausfuehren.
+    pause
+    exit /b 1
+)
 echo ============================================================
 echo  GENESIS Media Manager wird zum ersten Mal eingerichtet ...
 echo  (einmaliger Vorgang, braucht kurz Internetzugang fuer die

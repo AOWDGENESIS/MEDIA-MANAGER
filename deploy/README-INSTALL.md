@@ -24,10 +24,12 @@ keine Telemetrie (siehe `ARCHITECTURE.md` im Haupt-Repository, ADR-0001).
      Python-Umgebung für den Core-Service ein und legt Verknüpfungen im
      Startmenü/auf dem Desktop an.
    - Direkt im Anschluss startet `start.bat` die App automatisch.
-  - Bei jedem weiteren Doppelklick auf `start.bat` (oder einfach über
-    die angelegte Verknüpfung) wird die Installation übersprungen und
-    die App gestartet. Der Start prüft `/health` und verwendet einen bereits
-    laufenden Core-Service weiter, statt einen zweiten Prozess zu starten.
+   - Bei jedem weiteren Doppelklick auf `start.bat` (oder einfach über
+     die angelegte Verknüpfung) wird die Installation übersprungen und
+     die App gestartet. Wenn die Python-Umgebung beim ersten Lauf fehlte,
+     versucht `start.bat` die ZIP-Installation stattdessen erneut. Der
+     Start prüft `/health` und verwendet einen bereits laufenden
+     Core-Service weiter, statt einen zweiten Prozess zu starten.
 
 Keine Administratorrechte nötig (Installation nur für den aktuellen
 Benutzer). Deinstallation über **Einstellungen → Apps → Installierte
@@ -52,9 +54,11 @@ den normalen Windows-Installer-Dialog statt PowerShell) liegt im
 Haupt-Repository unter `deploy/wix/Product.wxs` das fertige
 WiX-Installationsprojekt. Ein MSI lässt sich automatisch und fertig
 gebaut über den GitHub-Actions-Workflow
-`.github/workflows/build-windows-installer.yml` beziehen (Actions → "Run
-workflow", danach als Artefakt herunterladen) — oder manuell auf einem
-Windows-Rechner mit installiertem WiX-Toolset über
+`.github/workflows/build-windows-installer.yml` beziehen (derzeit bei
+Push auf den Arbeitsbranch; der manuelle "Run workflow"-Knopf steht erst
+bereit, wenn der Workflow auf dem Default-Branch liegt). Nach einem
+erfolgreichen Lauf das MSI unter "Artifacts" herunterladen — oder auf
+einem Windows-Rechner mit installiertem WiX-Toolset über
 `deploy/Build-Package.ps1 -BuildMsi`.
 
 ## Alternative: Setup-EXE mit Inno Setup
@@ -70,7 +74,9 @@ noetig. Die Setup-EXE ist nicht signiert; Windows kann eine
 SmartScreen-Warnung anzeigen. Bestehende MSI- oder PowerShell-Installationen
 vorher ueber Windows-Einstellungen > Apps deinstallieren, weil sie denselben
 Programmordner mit unterschiedlichen Deinstallationsmechanismen benutzen.
-Die Benutzerdaten unter `%APPDATA%\GenesisMediaManager` bleiben erhalten.
+Inno beendet bei der Deinstallation nur die laufenden GENESIS-Prozesse
+(damit keine gesperrte `.venv` zurueckbleibt). Die Benutzerdaten unter
+`%APPDATA%\GenesisMediaManager` bleiben erhalten.
 
 ## Falls etwas nicht funktioniert
 

@@ -55,6 +55,20 @@ Get-ChildItem -Path $PackageRoot -Recurse -Filter "*.ps1" -ErrorAction SilentlyC
     Unblock-File -ErrorAction SilentlyContinue
 
 Write-Step "Installationsziel: $InstallDir"
+# Dieser Installer besitzt ein EIGENES Uninstall-Register. Eine Inno-
+# Installation im gleichen Ordner wuerde sonst zwei Deinstallierer haben,
+# die gegenseitig Dateien/Verknuepfungen entfernen koennen.
+if (Test-Path (Join-Path $InstallDir 'unins000.exe')) {
+    throw "Im Zielordner liegt eine Inno-Setup-Installation. Bitte ueber Einstellungen > Apps die bestehende Version deinstallieren oder dieselbe Inno-Setup-EXE erneut ausfuehren. Nicht ZIP/PowerShell darueber installieren."
+}
+$existingMsi = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
+    Get-ItemProperty -ErrorAction SilentlyContinue |
+    Where-Object { $_.DisplayName -eq 'GENESIS Media Manager' -and
+        ($_.WindowsInstaller -eq 1 -or $_.UninstallString -match 'MsiExec(\.exe)?\s') } |
+    Select-Object -First 1
+if ($existingMsi) {
+    throw "Ein MSI-Installer verwaltet diese App bereits. Bitte diese Version zuerst ueber Einstellungen > Apps deinstallieren; ZIP/PowerShell darf nicht ueber die MSI-Installation schreiben."
+}
 
 # --- 0b) Laufende Instanz beenden (vermeidet "Zugriff verweigert" beim ---
 # ----    Aktualisieren einer bestehenden Installation) --------------------

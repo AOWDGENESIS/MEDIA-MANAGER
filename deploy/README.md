@@ -14,9 +14,8 @@ zusammen" + "echtes MSI").
   `i18n/`-Sprachkataloge und die Installer-Skripte, packt alles in ein
   ZIP und kann optional (`-BuildMsi`) zusaetzlich das echte MSI mit dem
   WiX-Toolset bauen.
-- **`installer/`** — die drei PowerShell-Skripte des *einfachen*
-  Installationswegs (funktioniert SOFORT auf jedem Windows-Rechner, auch
-  ohne WiX/MSI):
+- **`installer/`** — Installations-, Laufzeit- und Deinstallationsskripte
+  des einfachen Windows-Wegs (auch ohne WiX/Inno):
   - `Install-GenesisMediaManager.ps1` — kopiert die Programmdateien nach
     `%LOCALAPPDATA%\Programs\GenesisMediaManager`, richtet eine virtuelle
     Python-Umgebung fuer den Core-Service ein, legt Startmenue-/
@@ -30,6 +29,9 @@ zusammen" + "echtes MSI").
     Verknuepfungen und den Registry-Eintrag; laesst Mediathek-Daten/
     Einstellungen unter `%APPDATA%\GenesisMediaManager` bewusst
     unangetastet (kein stiller Datenverlust).
+  - `Stop-GenesisProcesses.ps1` — beendet vor der Inno-Deinstallation
+    gezielt nur Client und Core dieser Installation.
+  - `Start-GenesisMediaManager.bat` — gemeinsamer Startweg aller Pakete.
 - **`wix/Product.wxs`** — das WiX-v5-Installationsprojekt fuer ein MSI.
 - **`inno/GenesisMediaManager.iss`** — Inno-Setup-6-Skript fuer eine
   Setup-EXE (x64, ohne Administratorrechte). Erwartet den von
@@ -54,9 +56,10 @@ Inline-Text-Condition - wurden dabei tatsaechlich gefunden und behoben;
 siehe PROGRESS.md). Ein echtes MSI entsteht automatisch und verifiziert
 ueber den GitHub-Actions-Workflow
 `.github/workflows/build-windows-installer.yml` (laeuft auf
-`windows-latest`) - einfach unter GitHub → Actions → "Windows-Installer
-bauen" → "Run workflow" anstossen, danach liegt das MSI als Artefakt zum
-Download bereit.
+`windows-latest`) bei Pushes auf den Arbeitsbranch. Der Workflow ist
+noch nicht auf dem Default-Branch `main`; `Run workflow` erscheint auf
+GitHub deshalb derzeit nicht. Nach gruenem Lauf liegen MSI, ZIP und
+Inno-EXE unter **Artifacts** (GitHub-Login kann noetig sein).
 
 ## Lokal von Hand bauen (auf echtem Windows mit WiX)
 

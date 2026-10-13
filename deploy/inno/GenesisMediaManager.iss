@@ -43,6 +43,7 @@ Source: "{#Payload}\client\*"; DestDir: "{app}\client"; Flags: ignoreversion rec
 Source: "{#Payload}\backend\*"; DestDir: "{app}\backend"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Payload}\i18n\*"; DestDir: "{app}\i18n"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Payload}\installer\Setup-PythonRuntime.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
+Source: "{#Payload}\installer\Stop-GenesisProcesses.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "{#Payload}\installer\Start-GenesisMediaManager.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
@@ -112,4 +113,30 @@ end;
 function RuntimeReady(): Boolean;
 begin
   Result := PythonReady;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ExitCode: Integer;
+  Params: string;
+begin
+  if CurUninstallStep <> usUninstall then
+    Exit;
+
+  { Vor dem Entfernen von .venv die Prozesse DIESER Installation beenden.
+    CloseApplications erkennt nicht zwingend das dynamisch per pip erstellte
+    pythonw.exe; sonst bleiben gesperrte DLLs nach der Deinstallation liegen. }
+  ExitCode := -1;
+  Params := '-NoProfile -ExecutionPolicy Bypass -File "' +
+    ExpandConstant('{app}\installer\Stop-GenesisProcesses.ps1') +
+    '" -InstallDir "' + ExpandConstant('{app}') + '"';
+  if (not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+      Params, ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ExitCode)) or
+      (ExitCode <> 0) then
+  begin
+    MsgBox('GENESIS-Prozesse konnten nicht beendet werden. Bitte die App ' +
+      'schliessen und die Deinstallation erneut starten. Exit-Code ' +
+      IntToStr(ExitCode), mbError, MB_OK);
+    Abort;
+  end;
 end;

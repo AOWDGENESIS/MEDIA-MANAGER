@@ -36,6 +36,22 @@
     <SummaryInformation Description="GENESIS Media Manager - lokale Medienbibliothek (Client + Core-Service)" />
 
     <MajorUpgrade DowngradeErrorMessage="Eine neuere Version von GENESIS Media Manager ist bereits installiert." />
+    <!-- Alle Installer nutzen denselben Ordner, aber verschiedene
+         Deinstallationsmechanismen. MSI darf nicht ueber Inno/PowerShell
+         installiert werden; ansonsten entfernt der eine Uninstaller
+         spaeter Dateien des anderen. AppId siehe inno/*.iss. -->
+    <Property Id="INNO_INSTALL_EXISTS">
+      <RegistrySearch Id="FindInnoUninstaller" Root="HKCU"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\{D9F1FF8F-8DD4-4C55-A656-6B3B01B79466}_is1"
+                      Name="DisplayName" Type="raw" />
+    </Property>
+    <Property Id="SCRIPT_INSTALL_EXISTS">
+      <RegistrySearch Id="FindScriptUninstaller" Root="HKCU"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\GenesisMediaManager"
+                      Name="DisplayName" Type="raw" />
+    </Property>
+    <Launch Condition="NOT INNO_INSTALL_EXISTS AND NOT SCRIPT_INSTALL_EXISTS"
+            Message="GENESIS Media Manager ist bereits per Inno Setup oder PowerShell installiert. Bitte erst ueber Apps deinstallieren; Benutzerdaten bleiben erhalten." />
     <MediaTemplate EmbedCab="yes" />
 
     <!-- Fuer Programs-und-Features-Eintrag / ARP (Add/Remove Programs) -->

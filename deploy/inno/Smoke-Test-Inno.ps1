@@ -16,6 +16,7 @@ $python = Join-Path $installDir '.venv\Scripts\python.exe'
 $dataDir = Join-Path $env:APPDATA 'GenesisMediaManager'
 $sentinel = Join-Path $dataDir 'ci-keep-user-data.txt'
 $log = Join-Path $env:RUNNER_TEMP 'genesis-inno-install.log'
+$msiConflictLog = Join-Path $env:RUNNER_TEMP 'genesis-msi-conflict.log'
 $apiError = Join-Path $env:RUNNER_TEMP 'genesis-inno-api-stderr.log'
 $apiOutput = Join-Path $env:RUNNER_TEMP 'genesis-inno-api-stdout.log'
 $testData = Join-Path $env:RUNNER_TEMP 'genesis-smoke-data'
@@ -57,6 +58,21 @@ try {
     )) {
         if (-not (Test-Path $path)) { throw "Fehlende Installationsdatei: $path" }
     }
+
+    # Negativer Konflikttest: Ein MSI im selben Zielordner muss die
+    # bestehende Inno-Installation ablehnen, BEVOR es Dateien veraendert.
+    $msi = Join-Path $repoRoot 'build\package\GenesisMediaManager-Setup.msi'
+    if (-not (Test-Path $msi)) { throw "MSI fuer Konflikttest fehlt: $msi" }
+    Write-Host 'Pruefe MSI-Sperre gegen bestehende Inno-Installation'
+    $msiAttempt = Start-Process -FilePath 'msiexec.exe' -ArgumentList @(
+        '/i', ('"' + $msi + '"'), '/qn', '/norestart', '/l*v', ('"' + $msiConflictLog + '"')
+    ) -Wait -PassThru
+    if ($msiAttempt.ExitCode -eq 0) { throw 'MSI wurde trotz bestehender Inno-Installation installiert' }
+    if (-not (Test-Path $msiConflictLog) -or
+        -not (Select-String -Path $msiConflictLog -Pattern 'GENESIS Media Manager ist bereits per Inno Setup' -Quiet)) {
+        throw "MSI wurde nicht eindeutig durch die Inno-Konfliktsperre abgewiesen (Code $($msiAttempt.ExitCode))"
+    }
+    if (-not (Test-Path $uninstall)) { throw 'MSI-Konflikttest hat den Inno-Uninstaller veraendert' }
 
     Write-Host 'Pruefe installierte Python-Abhaengigkeiten und Core-API /health'
     & $python -c 'import fastapi, sqlalchemy, uvicorn'
@@ -215,6 +231,10 @@ try {
 } catch {
     Write-Host "::error::$($_.Exception.Message)"
     if (Test-Path $log) { Get-Content $log -Tail 70 }
+    if (Test-Path $msiConflictLog) {
+        Select-String -Path $msiConflictLog -Pattern 'Launch|GENESIS|Error|Fehler' |
+            Select-Object -Last 30 | ForEach-Object { Write-Host $_.Line }
+    }
     if (Test-Path $apiError) { Get-Content $apiError -Tail 70 }
     $coreLog = Join-Path $dataDir 'core-service.log'
     if (Test-Path $coreLog) { Get-Content $coreLog -Tail 70 }

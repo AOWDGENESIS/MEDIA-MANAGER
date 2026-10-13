@@ -91,21 +91,21 @@ jobs:
         run: ./deploy/inno/Smoke-Test-Inno.ps1
 
       - name: ZIP als Artefakt hochladen
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: GenesisMediaManager-Setup-zip
           path: build/GenesisMediaManager-Setup.zip
           if-no-files-found: error
 
       - name: MSI als Artefakt hochladen
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: GenesisMediaManager-Setup-msi
           path: build/package/GenesisMediaManager-Setup.msi
           if-no-files-found: error
 
       - name: Inno-Setup-EXE als Artefakt hochladen
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: GenesisMediaManager-Inno-Setup-exe
           path: build/GenesisMediaManager-Inno-Setup.exe

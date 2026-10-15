@@ -20,7 +20,8 @@
 [CmdletBinding()]
 param(
     [string]$InstallDir,
-    [switch]$SkipVoice
+    [switch]$SkipVoice,
+    [string]$PythonExecutable
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,9 +41,22 @@ function Write-Warn2 { param([string]$Message) Write-Host "    WARNUNG: $Message
 
 Write-Step "Suche installiertes Python (3.11 oder neuer) fuer den Core-Service"
 $PythonExe = $null
-# Ein explizit auf PATH eingerichtetes Python hat Vorrang vor dem
-# Windows-py-Launcher (dessen Standardversion kann eine andere sein).
-foreach ($candidate in @("python", "py", "python3")) {
+# MSI-Custom-Actions koennen in einem anderen Prozess/Umgebungskontext
+# laufen als der aufrufende Benutzer. Der optionale explizite Pfad (z.B.
+# von der CI) verhindert, dass ein ausschliesslich pro Prozess gesetzter
+# PATH unsichtbar wird. Ohne Pfad zuerst PATH, danach Python-Registry.
+$candidates = @()
+if ($PythonExecutable) { $candidates += $PythonExecutable }
+$candidates += @('python', 'py', 'python3')
+foreach ($registryRoot in @('HKCU:\Software\Python\PythonCore', 'HKLM:\Software\Python\PythonCore')) {
+    if (Test-Path $registryRoot) {
+        Get-ChildItem $registryRoot -ErrorAction SilentlyContinue | ForEach-Object {
+            $location = Get-ItemProperty (Join-Path $_.PSPath 'InstallPath') -ErrorAction SilentlyContinue
+            if ($location -and $location.ExecutablePath) { $candidates += $location.ExecutablePath }
+        }
+    }
+}
+foreach ($candidate in $candidates) {
     $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
     if (-not $cmd) { continue }
     try {

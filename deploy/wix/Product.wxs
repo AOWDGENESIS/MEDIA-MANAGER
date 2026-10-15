@@ -136,7 +136,7 @@
          Dienstes. Installation pro Benutzer, Python bleibt extern. -->
     <CustomAction Id="RunPythonSetup"
                   Directory="INSTALLFOLDER"
-                  ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[InstallerDir]Setup-PythonRuntime.ps1&quot; -InstallDir &quot;[INSTALLFOLDER]&quot;"
+                  ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[InstallerDir]Setup-PythonRuntime.ps1&quot; -InstallDir &quot;[INSTALLFOLDER].&quot; -PythonExecutable &quot;[GENESIS_PYTHON]&quot;"
                   Execute="immediate"
                   Return="check" />
 

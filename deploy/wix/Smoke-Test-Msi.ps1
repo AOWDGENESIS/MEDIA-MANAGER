@@ -25,8 +25,12 @@ if (Test-Path $client) { throw "MSI-Test braucht einen freien Programmordner: $c
 
 try {
     Write-Host 'Installiere MSI im frischen Benutzerprofil (nach Inno-Deinstallation)'
+    # setup-python@v6 erweitert nur den PATH des CI-Prozesses. Der MSI-
+    # Dienst erbt ihn nicht; den bereits geprueften Interpreter uebergeben.
+    $pythonFromCi = (Get-Command python -ErrorAction Stop).Source
     $p = Start-Process -FilePath msiexec.exe -ArgumentList @(
-        '/i', ('"' + $msi + '"'), '/qn', '/norestart', '/l*v', ('"' + $installLog + '"')
+        '/i', ('"' + $msi + '"'), '/qn', '/norestart',
+        ('GENESIS_PYTHON="' + $pythonFromCi + '"'), '/l*v', ('"' + $installLog + '"')
     ) -PassThru -Wait
     if ($p.ExitCode -ne 0) { throw "MSI-Installation fehlgeschlagen: $($p.ExitCode)" }
     foreach ($file in @($client, $backend, (Join-Path $installDir 'Start-GenesisMediaManager.bat'))) {

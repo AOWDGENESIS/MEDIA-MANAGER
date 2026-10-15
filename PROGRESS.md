@@ -4932,7 +4932,7 @@ ohne im selben HKCU sichtbaren Uninstall-Eintrag blockiert. Das tatsächliche
 ZIP wurde zudem unter Windows entpackt, installiert, gestartet, über
 `/health` geprüft und deinstalliert.
 
-[Windows-Lauf 38701776792](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38701776792):
+[Windows-Lauf 38702688565](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38702688565):
 .NET-Tests, alle drei Paketbauten, Inno-, ZIP- und MSI-Positivtests,
 Installer-Konflikttests und Upload von ZIP/MSI/EXE erfolgreich;
 **0 Check-Run-Annotationen**. Der MSI-Test übergibt den Python-Pfad

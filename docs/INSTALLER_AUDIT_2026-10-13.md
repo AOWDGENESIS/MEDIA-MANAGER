@@ -2,13 +2,13 @@
 
 ## Ergebnis
 
-Der aktuelle Windows-Build ist erfolgreich: [GitHub-Actions-Lauf 38701776792](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38701776792). Der Lauf hat **0 GitHub-Annotationen** und erzeugte drei nicht abgelaufene Artefakte:
+Der aktuelle Windows-Build ist erfolgreich: [GitHub-Actions-Lauf 38702688565](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38702688565). Der Lauf hat **0 GitHub-Annotationen** und erzeugte drei nicht abgelaufene Artefakte:
 
 | Artefakt | Größe des GitHub-Artefakts |
 |---|---:|
-| `GenesisMediaManager-Inno-Setup-exe` | 50.992.232 Bytes |
-| `GenesisMediaManager-Setup-msi` | 59.591.674 Bytes |
-| `GenesisMediaManager-Setup-zip` | 132.506.077 Bytes |
+| `GenesisMediaManager-Inno-Setup-exe` | 50.990.496 Bytes |
+| `GenesisMediaManager-Setup-msi` | 59.597.684 Bytes |
+| `GenesisMediaManager-Setup-zip` | 132.512.752 Bytes |
 
 **Für die Installation auf dem PC:** Unter „Artifacts“ `GenesisMediaManager-Inno-Setup-exe` herunterladen, die von GitHub gelieferte ZIP entpacken und die enthaltene `.exe` ausführen. Die `.iss` ist nur das Bauskript. Python 3.11+ auf PATH und Internet für die erstmalige Python-Einrichtung sind erforderlich.
 

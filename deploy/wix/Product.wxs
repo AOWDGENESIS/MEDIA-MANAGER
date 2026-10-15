@@ -20,7 +20,7 @@
   i18n-Sprachkataloge. Die Python-Laufzeitumgebung fuer den Core-Service
   wird NICHT von MSI selbst verwaltet (Windows Installer eignet sich
   schlecht fuer laengere Netzwerkoperationen wie "pip install"), sondern
-  per deferred CustomAction ueber Setup-PythonRuntime.ps1 angestossen
+  per synchroner CustomAction ueber Setup-PythonRuntime.ps1 eingerichtet
   (dieselbe Logik wie beim einfachen PowerShell-Installer, siehe
   installer/Install-GenesisMediaManager.ps1).
 -->
@@ -129,17 +129,16 @@
     </Component>
     <CustomAction Id="SetInstallFolderVenv" Property="INSTALLFOLDER_VENV" Value="[INSTALLFOLDER].venv" />
 
-    <!-- Nach Dateiinstallation: Python-Laufzeitumgebung einrichten.
-         "asyncNoWait", weil "pip install" 1-2 Minuten dauern kann und MSI
-         sonst scheinbar haengen bleibt - laeuft im Hintergrund weiter,
-         nachdem der Installationsdialog bereits fertig gemeldet ist.
-         Bewusst OHNE Elevate/Systemkontext (Scope="perUser" installiert
-         bereits ohne Admin, pip schreibt nur in den lokalen venv-Ordner). -->
+    <!-- Python nicht als Fire-and-forget starten: asyncNoWait meldete im
+         positiven MSI-Test Erfolg, obwohl nie ein .venv entstand. Der
+         Installer wartet jetzt auf den tatsaechlichen Exit-Code. Der
+         absolute PowerShell-Pfad vermeidet PATH-Unterschiede des MSI-
+         Dienstes. Installation pro Benutzer, Python bleibt extern. -->
     <CustomAction Id="RunPythonSetup"
                   Directory="INSTALLFOLDER"
-                  ExeCommand="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;[InstallerDir]Setup-PythonRuntime.ps1&quot; -InstallDir &quot;[INSTALLFOLDER]&quot;"
+                  ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[InstallerDir]Setup-PythonRuntime.ps1&quot; -InstallDir &quot;[INSTALLFOLDER]&quot;"
                   Execute="immediate"
-                  Return="asyncNoWait" />
+                  Return="check" />
 
     <InstallExecuteSequence>
       <Custom Action="SetInstallFolderVenv" Before="RemoveFiles" Condition="INSTALLFOLDER" />

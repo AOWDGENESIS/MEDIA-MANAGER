@@ -97,6 +97,11 @@
     <Component Id="StartScript" Directory="INSTALLFOLDER" Guid="FD7234A2-0569-4697-936B-7A71A6B33FD7">
       <File Id="StartBat" Source="$(var.StartScriptSource)" Name="Start-GenesisMediaManager.bat" KeyPath="yes" />
     </Component>
+    <!-- Datei statt nur Registry: auch bei anderem MSI-Dienst-/HKCU-
+         Kontext erkennt der ZIP-Installer die fremde Installation. -->
+    <Component Id="MsiOwnership" Directory="INSTALLFOLDER" Guid="*">
+      <File Id="MsiOwnershipFile" Source="$(var.MsiOwnerSource)" Name="MsiOwnership.txt" KeyPath="yes" />
+    </Component>
 
     <!-- Verknuepfungen -->
     <Component Id="StartMenuShortcut" Directory="AppProgramsMenuDir" Guid="373F8980-3761-4F72-AB08-F9C7043AFC4D">
@@ -151,6 +156,7 @@
       <ComponentGroupRef Id="I18nFiles" />
       <ComponentGroupRef Id="InstallerScriptFiles" />
       <ComponentRef Id="StartScript" />
+      <ComponentRef Id="MsiOwnership" />
       <ComponentRef Id="StartMenuShortcut" />
       <ComponentRef Id="DesktopShortcut" />
       <ComponentRef Id="CleanupVenvOnUninstall" />

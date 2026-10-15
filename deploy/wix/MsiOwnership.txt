@@ -1,0 +1,1 @@
+GENESIS Media Manager: Diese Installation wird von Windows Installer (MSI) verwaltet. Bitte vor einem Wechsel zu Inno Setup oder ZIP/PowerShell ueber Windows-Einstellungen > Apps deinstallieren.

@@ -33,7 +33,8 @@ try {
         ('GENESIS_PYTHON="' + $pythonFromCi + '"'), '/l*v', ('"' + $installLog + '"')
     ) -PassThru -Wait
     if ($p.ExitCode -ne 0) { throw "MSI-Installation fehlgeschlagen: $($p.ExitCode)" }
-    foreach ($file in @($client, $backend, (Join-Path $installDir 'Start-GenesisMediaManager.bat'))) {
+    foreach ($file in @($client, $backend, (Join-Path $installDir 'Start-GenesisMediaManager.bat'),
+                       (Join-Path $installDir 'MsiOwnership.txt'))) {
         if (-not (Test-Path $file)) { throw "MSI enthaelt Datei nicht: $file" }
     }
 
@@ -85,20 +86,33 @@ try {
     $apiProcess.WaitForExit(10000) | Out-Null
     $apiProcess = $null
 
+    # Negativer Test: Der ZIP-/PowerShell-Installer darf auch dann nicht
+    # ueber das MSI schreiben, wenn dessen Uninstall-Eintrag nicht unter
+    # HKCU des CI-Prozesses sichtbar ist.
+    $guardError = Join-Path $env:RUNNER_TEMP 'genesis-zip-msi-conflict.err'
+    $guardOutput = Join-Path $env:RUNNER_TEMP 'genesis-zip-msi-conflict.out'
+    $zipInstaller = Join-Path $repoRoot 'deploy\installer\Install-GenesisMediaManager.ps1'
+    $blocked = Start-Process -FilePath powershell.exe -ArgumentList @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $zipInstaller + '"'), '-SkipPythonSetup'
+    ) -PassThru -Wait -RedirectStandardOutput $guardOutput -RedirectStandardError $guardError
+    if ($blocked.ExitCode -eq 0 -or
+        -not (Select-String -Path $guardError -Pattern 'MSI-Installer verwaltet diese App' -Quiet)) {
+        throw "ZIP-Installer hat bestehende MSI-Installation nicht eindeutig abgewiesen (Code $($blocked.ExitCode))"
+    }
+    if (-not (Test-Path $client)) { throw 'ZIP-Konflikttest hat den MSI-Client veraendert' }
+
     New-Item -ItemType Directory -Force -Path (Split-Path $sentinel) | Out-Null
     Set-Content -Path $sentinel -Value 'MSI: Benutzerdaten erhalten'
-    $entry = @(Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue |
-        Where-Object { $_.DisplayName -eq 'GENESIS Media Manager' -and $_.WindowsInstaller -eq 1 })
-    if ($entry.Count -ne 1 -or $entry[0].PSChildName -notmatch '^\{[0-9A-Fa-f-]{36}\}$') {
-        throw 'MSI-Uninstall-Eintrag in HKCU nicht eindeutig gefunden'
-    }
-    $productCode = $entry[0].PSChildName
-    Write-Host "Deinstalliere MSI $productCode"
+    # Per-User-MSI erscheinen je nach Windows-/Installer-Kontext nicht
+    # zwingend im HKCU-Uninstall-Zweig des aufrufenden pwsh-Prozesses.
+    # msiexec /x akzeptiert die bereits gebaute MSI-Datei direkt.
+    Write-Host 'Deinstalliere MSI anhand des Installationspakets'
     $p = Start-Process -FilePath msiexec.exe -ArgumentList @(
-        '/x', $productCode, '/qn', '/norestart', '/l*v', ('"' + $uninstallLog + '"')
+        '/x', ('"' + $msi + '"'), '/qn', '/norestart', '/l*v', ('"' + $uninstallLog + '"')
     ) -PassThru -Wait
     if ($p.ExitCode -ne 0) { throw "MSI-Deinstallation fehlgeschlagen: $($p.ExitCode)" }
     if (Test-Path $client) { throw 'MSI-Deinstallation hat Client hinterlassen' }
+    if (Test-Path (Join-Path $installDir 'MsiOwnership.txt')) { throw 'MSI-Deinstallation hat Besitzer-Marker hinterlassen' }
     if (Test-Path $python) { throw 'MSI-Deinstallation hat venv hinterlassen' }
     if (-not (Test-Path $sentinel)) { throw 'MSI-Deinstallation hat Benutzerdaten geloescht' }
     Write-Host 'MSI-Smoke-Test erfolgreich: Installation, Core /health, Deinstallation, Benutzerdaten erhalten.'

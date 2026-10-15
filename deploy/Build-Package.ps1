@@ -189,6 +189,7 @@ if ($BuildMsi) {
         -d "I18nSourceDir=$(Join-Path $OutputDir 'i18n')" `
         -d "InstallerSourceDir=$(Join-Path $OutputDir 'installer')" `
         -d "StartScriptSource=$(Join-Path $PSScriptRoot 'installer\Start-GenesisMediaManager.bat')" `
+        -d "MsiOwnerSource=$(Join-Path $PSScriptRoot 'wix\MsiOwnership.txt')" `
         -o $msiOut
     if ($LASTEXITCODE -ne 0) { throw "wix build fehlgeschlagen" }
     Write-Ok "MSI gebaut: $msiOut"

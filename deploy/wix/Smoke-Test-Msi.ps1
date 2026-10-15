@@ -44,7 +44,14 @@ try {
         }
         Start-Sleep -Seconds 3
     }
-    if (-not $ready) { throw 'MSI-Python-Setup hat nach 5 Minuten keine lauffaehigen Core-Abhaengigkeiten bereitgestellt' }
+    if (-not $ready) {
+        Write-Host "::error::MSI-Diagnose: venv-Python vorhanden=$(Test-Path $python), Setup-Skript vorhanden=$(Test-Path (Join-Path $installDir 'installer\Setup-PythonRuntime.ps1'))"
+        if (Test-Path $python) {
+            & $python -c 'import fastapi, sqlalchemy, uvicorn' 2>&1 |
+                Select-Object -Last 8 | ForEach-Object { Write-Host "::error::Python: $_" }
+        }
+        throw 'MSI-Python-Setup hat nach 5 Minuten keine lauffaehigen Core-Abhaengigkeiten bereitgestellt'
+    }
     # Optionale Voice-Pakete werden nach den Core-Abhaengigkeiten installiert.
     # Erst deinstallieren, wenn auch dieser asynchrone Installer beendet ist.
     $setupFinished = $false
@@ -96,8 +103,11 @@ try {
     foreach ($log in @($installLog, $uninstallLog, $apiLog)) {
         if (Test-Path $log) {
             Write-Host "Diagnose aus $log"
-            Select-String -Path $log -Pattern 'error|fehler|Return value 3|Setup-Python|GENESIS' |
-                Select-Object -Last 25 | ForEach-Object { Write-Host $_.Line }
+            Select-String -Path $log -Pattern 'RunPythonSetup|error|fehler|Return value 3|Setup-Python|GENESIS|powershell.exe' |
+                Select-Object -Last 30 | ForEach-Object {
+                    $message = ($_.Line -replace '%', '%25') -replace '[\r\n]+', ' '
+                    Write-Host "::error::$message"
+                }
             Get-Content $log -Tail 25
         }
     }

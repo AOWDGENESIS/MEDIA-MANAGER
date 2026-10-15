@@ -1,0 +1,28 @@
+GENESIS MEDIA MANAGER - KOMPLETTPAKET
+
+Fuer die Installation auf einem Windows-PC:
+  1. Dieses GitHub-Artefakt (ZIP) vollstaendig entpacken.
+  2. Python 3.11 oder neuer installieren und zum PATH hinzufuegen.
+     Fuer die erste Einrichtung wird eine Internetverbindung benoetigt.
+  3. GenesisMediaManager-Inno-Setup.exe starten.
+
+Die Setup-EXE ist der empfohlene, unter Windows getestete Installationsweg.
+Sie enthaelt bereits den WPF-Client und den Python-Core-Quellcode, richtet
+aber die Python-Abhaengigkeiten beim Installieren ueber pip ein.
+Die Datei ist nicht digital signiert; Windows SmartScreen kann warnen.
+
+WEITERE DATEIEN (NICHT zusaetzlich ueber die EXE installieren):
+  GenesisMediaManager-Setup.msi      alternative MSI-Installation
+  GenesisMediaManager-Setup.zip      alternative ZIP-/start.bat-Installation
+  GenesisMediaManager.iss            Inno-Setup-Bauskript fuer Entwickler
+  GenesisMediaManager-Quellcode.zip  vollstaendiger getrackter Projektquellcode
+  README-INSTALL.md                  ausfuehrliche Installationsanleitung
+  INSTALLER_AUDIT.md                 Testergebnisse und bekannte Grenzen
+  BUILDINFO.txt                      Commit und Link zum zugehoerigen CI-Lauf
+  SHA256SUMS.txt                     SHA-256-Pruefsummen der Nutzdateien
+
+WICHTIG: EXE, MSI und ZIP sind drei alternative Installer fuer denselben
+Programmordner. Nur EINEN davon verwenden. Vor dem Wechsel zwischen den
+Varianten die bisherige Installation in Windows-Einstellungen > Apps
+entfernen; die Mediathek-Daten unter %APPDATA%\GenesisMediaManager bleiben
+erhalten. Der Quellcode allein ist keine Installationsdatei.

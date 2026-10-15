@@ -97,23 +97,17 @@ jobs:
         timeout-minutes: 12
         run: ./deploy/wix/Smoke-Test-Msi.ps1
 
-      - name: ZIP als Artefakt hochladen
-        uses: actions/upload-artifact@v6
-        with:
-          name: GenesisMediaManager-Setup-zip
-          path: build/GenesisMediaManager-Setup.zip
-          if-no-files-found: error
+      # Ein Download fuer alle Installationsvarianten, Bauskript, Anleitung
+      # und Quellcode. Der temporaere Ordner liegt auf dem Windows-Runner,
+      # nicht im auf 100 MB begrenzten Entwicklungs-Workspace.
+      - name: Komplettpaket fuer einen Download zusammenstellen
+        shell: pwsh
+        run: ./deploy/Build-DownloadBundle.ps1
 
-      - name: MSI als Artefakt hochladen
+      - name: Komplettpaket als eine ZIP hochladen
         uses: actions/upload-artifact@v6
         with:
-          name: GenesisMediaManager-Setup-msi
-          path: build/package/GenesisMediaManager-Setup.msi
+          name: GenesisMediaManager-Komplettpaket-zip
+          path: ${{ runner.temp }}/GenesisMediaManager-Komplettpaket/
           if-no-files-found: error
-
-      - name: Inno-Setup-EXE als Artefakt hochladen
-        uses: actions/upload-artifact@v6
-        with:
-          name: GenesisMediaManager-Inno-Setup-exe
-          path: build/GenesisMediaManager-Inno-Setup.exe
-          if-no-files-found: error
+          compression-level: 0

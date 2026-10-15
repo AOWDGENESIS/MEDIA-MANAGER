@@ -58,8 +58,11 @@ ueber den GitHub-Actions-Workflow
 `.github/workflows/build-windows-installer.yml` (laeuft auf
 `windows-latest`) bei Pushes auf den Arbeitsbranch. Der Workflow ist
 noch nicht auf dem Default-Branch `main`; `Run workflow` erscheint auf
-GitHub deshalb derzeit nicht. Nach gruenem Lauf liegen MSI, ZIP und
-Inno-EXE unter **Artifacts** (GitHub-Login kann noetig sein).
+GitHub deshalb derzeit nicht. Nach gruenem Lauf liegt unter **Artifacts**
+ein einziges `GenesisMediaManager-Komplettpaket-zip` mit Setup-EXE, MSI,
+alternativem Installations-ZIP, `.iss`, Anleitung und Quellcode
+(GitHub-Login kann noetig sein). Fuer die PC-Installation nur die
+enthaltene `GenesisMediaManager-Inno-Setup.exe` starten.
 
 ## Lokal von Hand bauen (auf echtem Windows mit WiX)
 

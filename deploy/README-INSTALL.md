@@ -57,16 +57,20 @@ gebaut über den GitHub-Actions-Workflow
 `.github/workflows/build-windows-installer.yml` beziehen (derzeit bei
 Push auf den Arbeitsbranch; der manuelle "Run workflow"-Knopf steht erst
 bereit, wenn der Workflow auf dem Default-Branch liegt). Nach einem
-erfolgreichen Lauf das MSI unter "Artifacts" herunterladen — oder auf
-einem Windows-Rechner mit installiertem WiX-Toolset über
-`deploy/Build-Package.ps1 -BuildMsi`.
+erfolgreichen Lauf unter "Artifacts" das **eine**
+`GenesisMediaManager-Komplettpaket-zip` herunterladen und das darin
+enthaltene `GenesisMediaManager-Setup.msi` nutzen — oder auf einem
+Windows-Rechner mit installiertem WiX-Toolset über
+`deploy/Build-Package.ps1 -BuildMsi` selbst bauen. Fuer die einfache
+Installation wird stattdessen die Inno-EXE aus demselben Paket empfohlen.
 
 ## Alternative: Setup-EXE mit Inno Setup
 
 Das Projekt enthaelt auch `deploy/inno/GenesisMediaManager.iss` fuer eine
 klassische Windows-Setup-EXE. Ein fertiger Windows-CI-Build liegt im
-Actions-Lauf als Artefakt `GenesisMediaManager-Inno-Setup-exe` (die
-Artefakt-ZIP entpacken und die enthaltene `.exe` ausfuehren). Die `.iss`
+Actions-Lauf als **ein** Artefakt `GenesisMediaManager-Komplettpaket-zip`.
+Dieses herunterladen, entpacken und die enthaltene
+`GenesisMediaManager-Inno-Setup.exe` ausfuehren. Die `.iss`
 allein ist **keine** installierbare Datei: sie braucht das mit
 `deploy/Build-Package.ps1` erstellte Paket mit dem gebauten Client.
 Python 3.11+ (auf PATH) und einmalig Internet fuer pip sind weiterhin

@@ -2,7 +2,7 @@
 
 ## Ergebnis
 
-Der aktuelle Windows-Build ist erfolgreich: [GitHub-Actions-Lauf 38702688565](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38702688565). Der Lauf hat **0 GitHub-Annotationen** und erzeugte drei nicht abgelaufene Artefakte:
+Der hier geprüfte Windows-Build ist erfolgreich: [GitHub-Actions-Lauf 38702688565](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38702688565). Der Lauf hat **0 GitHub-Annotationen** und erzeugte drei nicht abgelaufene Einzelartefakte. Neuere Läufe bündeln diese Dateien in **einem** Download-Artefakt:
 
 | Artefakt | Größe des GitHub-Artefakts |
 |---|---:|
@@ -10,7 +10,7 @@ Der aktuelle Windows-Build ist erfolgreich: [GitHub-Actions-Lauf 38702688565](ht
 | `GenesisMediaManager-Setup-msi` | 59.597.684 Bytes |
 | `GenesisMediaManager-Setup-zip` | 132.512.752 Bytes |
 
-**Für die Installation auf dem PC:** Unter „Artifacts“ `GenesisMediaManager-Inno-Setup-exe` herunterladen, die von GitHub gelieferte ZIP entpacken und die enthaltene `.exe` ausführen. Die `.iss` ist nur das Bauskript. Python 3.11+ auf PATH und Internet für die erstmalige Python-Einrichtung sind erforderlich.
+**Für die Installation auf dem PC (neue Läufe):** Unter „Artifacts“ nur `GenesisMediaManager-Komplettpaket-zip` herunterladen, die von GitHub gelieferte ZIP entpacken und die enthaltene `GenesisMediaManager-Inno-Setup.exe` ausführen. Die ebenfalls enthaltenen MSI- und ZIP-Pakete sind **Alternativen**, nicht zusätzlich zu installieren. Die `.iss` ist nur das Bauskript. Python 3.11+ auf PATH und Internet für die erstmalige Python-Einrichtung sind erforderlich. `BUILDINFO.txt` nennt den zugehörigen Lauf und Commit.
 
 ## Gefunden und behoben
 

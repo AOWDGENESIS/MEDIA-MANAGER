@@ -4917,3 +4917,26 @@ in `docs/INSTALLER_AUDIT_2026-10-13.md`. Insbesondere wurden die normale
 MSI- und ZIP-Installation und die visuelle Darstellung auf dem PC des
 Nutzers nicht end-to-end abgenommen. Der Workspace bleibt bei ca. 11 MB
 und damit unter der vorgegebenen Grenze von 100 MB.
+
+## Fortsetzung 32 – Positivtests für ZIP und MSI (15.10.2026)
+
+Der zunächst nur negative MSI-Test wurde um reguläre Installation,
+Core-API, Deinstallation und einen Rückwärts-Konflikttest (ZIP gegen MSI)
+erweitert. Dadurch wurden zwei reale Fehler sichtbar: `asyncNoWait`
+meldete Installationserfolg ohne Python-venv; `util:RemoveFolderEx`
+ließ die pip-venv bei MSI-Deinstallation zurück. Beides ist korrigiert:
+synchrone Custom-Action mit geprüftem Exit-Code, gezielte Prozess-/venv-
+Bereinigung vor dem Entfernen der MSI-Dateien. MSI installiert eine
+eigene Besitzdatei, sodass der ZIP-Installer eine MSI-Installation auch
+ohne im selben HKCU sichtbaren Uninstall-Eintrag blockiert. Das tatsächliche
+ZIP wurde zudem unter Windows entpackt, installiert, gestartet, über
+`/health` geprüft und deinstalliert.
+
+[Windows-Lauf 38701776792](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38701776792):
+.NET-Tests, alle drei Paketbauten, Inno-, ZIP- und MSI-Positivtests,
+Installer-Konflikttests und Upload von ZIP/MSI/EXE erfolgreich;
+**0 Check-Run-Annotationen**. Der MSI-Test übergibt den Python-Pfad
+explizit, weil der CI-MSI-Dienst den temporären `setup-python`-PATH nicht
+übernimmt. Wie schon zuvor bleiben die visuelle Abnahme auf dem Nutzer-PC,
+SmartScreen/Signatur und Offline-Python-Einrichtung offen; siehe
+`docs/INSTALLER_AUDIT_2026-10-13.md`. Workspace ca. 11 MB (<100 MB).

@@ -7,7 +7,7 @@
 .DESCRIPTION
     Eigenstaendiges Skript (ausgelagert aus Install-GenesisMediaManager.ps1,
     damit sowohl der einfache PowerShell-Installer ALS AUCH die MSI-Variante
-    (als deferred CustomAction nach der Dateiinstallation, siehe
+    (als synchrone CustomAction nach der Dateiinstallation, siehe
     wix/Product.wxs) dieselbe, einmal geprüfte Logik verwenden - keine
     Doppelpflege zweier leicht unterschiedlicher Kopien.
 

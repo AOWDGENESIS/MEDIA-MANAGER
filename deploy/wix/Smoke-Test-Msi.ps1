@@ -38,36 +38,11 @@ try {
         if (-not (Test-Path $file)) { throw "MSI enthaelt Datei nicht: $file" }
     }
 
-    # MSI startet pip nach InstallFinalize asynchron. Ein MSI-Exit-Code 0
-    # beweist daher NICHT, dass der Core benutzbar ist: explizit warten.
-    Write-Host 'Warte auf asynchrone Python-Einrichtung durch MSI'
-    $ready = $false
-    for ($i = 0; $i -lt 100; $i++) {
-        if (Test-Path $python) {
-            & $python -c 'import fastapi, sqlalchemy, uvicorn' 2>$null
-            if ($LASTEXITCODE -eq 0) { $ready = $true; break }
-        }
-        Start-Sleep -Seconds 3
-    }
-    if (-not $ready) {
-        Write-Host "::error::MSI-Diagnose: venv-Python vorhanden=$(Test-Path $python), Setup-Skript vorhanden=$(Test-Path (Join-Path $installDir 'installer\Setup-PythonRuntime.ps1'))"
-        if (Test-Path $python) {
-            & $python -c 'import fastapi, sqlalchemy, uvicorn' 2>&1 |
-                Select-Object -Last 8 | ForEach-Object { Write-Host "::error::Python: $_" }
-        }
-        throw 'MSI-Python-Setup hat nach 5 Minuten keine lauffaehigen Core-Abhaengigkeiten bereitgestellt'
-    }
-    # Optionale Voice-Pakete werden nach den Core-Abhaengigkeiten installiert.
-    # Erst deinstallieren, wenn auch dieser asynchrone Installer beendet ist.
-    $setupFinished = $false
-    for ($i = 0; $i -lt 90; $i++) {
-        $setupProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
-            Where-Object { $_.CommandLine -like '*Setup-PythonRuntime.ps1*' -and
-                $_.CommandLine -like "*$installDir*" })
-        if ($setupProcesses.Count -eq 0) { $setupFinished = $true; break }
-        Start-Sleep -Seconds 2
-    }
-    if (-not $setupFinished) { throw 'Asynchrones MSI-Python-Setup laeuft nach weiteren 3 Minuten noch' }
+    # Die MSI-Custom-Action wartet jetzt selbst auf pip und prueft den
+    # Exit-Code. Zusaetzlich den benutzbaren Core statt nur die Datei pruefen.
+    if (-not (Test-Path $python)) { throw 'MSI hat keine Python-Umgebung angelegt' }
+    & $python -c 'import fastapi, sqlalchemy, uvicorn'
+    if ($LASTEXITCODE -ne 0) { throw 'MSI-Core-Abhaengigkeiten nicht importierbar' }
 
     $apiProcess = Start-Process -FilePath $python -ArgumentList @(
         ('"' + $backend + '"'), '--port', '18421', '--data-dir',

@@ -65,7 +65,6 @@ Inno-EXE unter **Artifacts** (GitHub-Login kann noetig sein).
 
 ```powershell
 dotnet tool install --global wix --version 5.0.2
-wix extension add -g WixToolset.Util.wixext/5.0.2
 ./deploy/Build-Package.ps1 -BuildMsi
 ```
 

@@ -8,7 +8,10 @@
     bleiben unberuehrt. Nutzerdaten unter %APPDATA% werden nie geloescht.
 #>
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$InstallDir)
+param(
+    [Parameter(Mandatory)][string]$InstallDir,
+    [switch]$RemoveVenv
+)
 
 $ErrorActionPreference = 'Stop'
 $clientExe = [IO.Path]::GetFullPath((Join-Path $InstallDir 'client\GenesisMediaManager.exe'))
@@ -30,3 +33,9 @@ foreach ($process in $running) {
 }
 # Warten, bis Windows Dateisperren (DLLs, .venv) freigegeben hat.
 Start-Sleep -Milliseconds 700
+if ($RemoveVenv) {
+    # Nur beim MSI-Uninstall; Inno entfernt .venv mit [UninstallDelete].
+    # Die Laufzeitdateien stammen von pip und werden NICHT vom MSI verwaltet.
+    $venv = Join-Path $InstallDir '.venv'
+    if (Test-Path $venv) { Remove-Item -LiteralPath $venv -Recurse -Force -ErrorAction Stop }
+}

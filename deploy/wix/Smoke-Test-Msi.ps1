@@ -103,10 +103,17 @@ try {
 
     New-Item -ItemType Directory -Force -Path (Split-Path $sentinel) | Out-Null
     Set-Content -Path $sentinel -Value 'MSI: Benutzerdaten erhalten'
+    # Der MSI-Uninstaller muss .venv auch bei laufendem Core entfernen.
+    $startBat = Join-Path $installDir 'Start-GenesisMediaManager.bat'
+    & $env:ComSpec /d /c ('"' + $startBat + '"')
+    if ($LASTEXITCODE -ne 0) { throw "MSI-Startskript fehlgeschlagen: $LASTEXITCODE" }
+    $runningHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5
+    if ($runningHealth.status -ne 'ok') { throw 'MSI-Core laeuft vor Deinstallation nicht' }
+
     # Per-User-MSI erscheinen je nach Windows-/Installer-Kontext nicht
     # zwingend im HKCU-Uninstall-Zweig des aufrufenden pwsh-Prozesses.
     # msiexec /x akzeptiert die bereits gebaute MSI-Datei direkt.
-    Write-Host 'Deinstalliere MSI anhand des Installationspakets'
+    Write-Host 'Deinstalliere MSI anhand des Installationspakets (Core laeuft)'
     $p = Start-Process -FilePath msiexec.exe -ArgumentList @(
         '/x', ('"' + $msi + '"'), '/qn', '/norestart', '/l*v', ('"' + $uninstallLog + '"')
     ) -PassThru -Wait
@@ -137,5 +144,11 @@ try {
     if ($apiProcess -and -not $apiProcess.HasExited) {
         Stop-Process -Id $apiProcess.Id -Force -ErrorAction SilentlyContinue
     }
+    Get-CimInstance Win32_Process -Filter "Name = 'pythonw.exe' OR Name = 'python.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like "*$installDir*backend*run_api.py*" } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    Get-Process -Name GenesisMediaManager -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -eq $client } |
+        Stop-Process -Force -ErrorAction SilentlyContinue
     Remove-Item $sentinel -ErrorAction SilentlyContinue
 }

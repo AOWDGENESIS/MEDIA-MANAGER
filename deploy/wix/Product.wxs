@@ -24,8 +24,7 @@
   (dieselbe Logik wie beim einfachen PowerShell-Installer, siehe
   installer/Install-GenesisMediaManager.ps1).
 -->
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
   <Package Name="GENESIS Media Manager"
            Manufacturer="GENESIS Media Manager Projekt"
@@ -123,16 +122,16 @@
       <RegistryValue Root="HKCU" Key="Software\GenesisMediaManager" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
-    <!-- Nicht von MSI getrackte Laufzeit-Artefakte (venv, pip-Cache) beim
-         Deinstallieren ebenfalls entfernen (util:RemoveFolderEx,
-         WixToolset.Util.wixext). Property wird ueber eine CustomAction
-         gesetzt (NICHT als Property/@Value direkt - WiX erlaubt dort
-         keine Referenz auf eine andere Property, siehe WIX1077). -->
-    <Component Id="CleanupVenvOnUninstall" Directory="INSTALLFOLDER" Guid="6B3F0E0E-6A52-4D4E-9B8E-2B9E9F2E9E6C">
-      <RegistryValue Root="HKCU" Key="Software\GenesisMediaManager" Name="CleanupVenv" Type="integer" Value="1" KeyPath="yes" />
-      <util:RemoveFolderEx On="uninstall" Property="INSTALLFOLDER_VENV" />
-    </Component>
-    <CustomAction Id="SetInstallFolderVenv" Property="INSTALLFOLDER_VENV" Value="[INSTALLFOLDER].venv" />
+    <!-- .venv wird von pip erzeugt und nicht als MSI-Datei verfolgt.
+         util:RemoveFolderEx entfernte ihn beim echten MSI-Uninstall NICHT.
+         Stattdessen vor RemoveFiles die Prozesse gezielt beenden und
+         .venv synchron entfernen; der Helfer ist zu diesem Zeitpunkt
+         noch als MSI-Datei vorhanden. Nutzerdaten bleiben unberuehrt. -->
+    <CustomAction Id="CleanupMsiRuntime"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[InstallerDir]Stop-GenesisProcesses.ps1&quot; -InstallDir &quot;[INSTALLFOLDER].&quot; -RemoveVenv"
+                  Execute="immediate"
+                  Return="check" />
 
     <!-- Python nicht als Fire-and-forget starten: asyncNoWait meldete im
          positiven MSI-Test Erfolg, obwohl nie ein .venv entstand. Der
@@ -146,7 +145,7 @@
                   Return="check" />
 
     <InstallExecuteSequence>
-      <Custom Action="SetInstallFolderVenv" Before="RemoveFiles" Condition="INSTALLFOLDER" />
+      <Custom Action="CleanupMsiRuntime" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot;" />
       <Custom Action="RunPythonSetup" After="InstallFinalize" Condition="NOT Installed" />
     </InstallExecuteSequence>
 
@@ -159,7 +158,6 @@
       <ComponentRef Id="MsiOwnership" />
       <ComponentRef Id="StartMenuShortcut" />
       <ComponentRef Id="DesktopShortcut" />
-      <ComponentRef Id="CleanupVenvOnUninstall" />
     </Feature>
   </Package>
 </Wix>

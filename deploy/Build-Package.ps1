@@ -182,7 +182,6 @@ if ($BuildMsi) {
     }
     $msiOut = Join-Path $OutputDir "GenesisMediaManager-Setup.msi"
     wix build (Join-Path $PSScriptRoot "wix\Product.wxs") `
-        -ext WixToolset.Util.wixext `
         -d ProductVersion=0.2.0.0 `
         -d "ClientSourceDir=$(Join-Path $OutputDir 'client')" `
         -d "BackendSourceDir=$(Join-Path $OutputDir 'backend')" `

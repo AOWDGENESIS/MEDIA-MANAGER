@@ -49,9 +49,6 @@ jobs:
       - name: WiX-Toolset-CLI installieren
         run: dotnet tool install --global wix --version 5.0.2
 
-      - name: WiX-Util-Erweiterung installieren
-        run: wix extension add WixToolset.Util.wixext/5.0.2
-
       - name: Inno Setup 6 bereitstellen
         shell: pwsh
         run: |

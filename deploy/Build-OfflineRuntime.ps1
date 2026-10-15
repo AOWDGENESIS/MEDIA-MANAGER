@@ -43,8 +43,13 @@ try {
     & tar -xzf $pythonArchive -C $pyExtract
     if ($LASTEXITCODE -ne 0) { throw 'Portable-Python-Archiv konnte nicht entpackt werden' }
     $pythonExe = Get-ChildItem $pyExtract -Recurse -Filter python.exe -File |
-        Where-Object { $_.Directory.Name -eq 'install' } | Select-Object -First 1
-    if (-not $pythonExe) { throw 'python.exe fehlt im python-build-standalone-Archiv' }
+        Select-Object -First 1
+    if (-not $pythonExe) {
+        Get-ChildItem $pyExtract -Recurse -File | Select-Object -First 20 -ExpandProperty FullName |
+            ForEach-Object { Write-Host "Archivdatei: $_" }
+        throw 'python.exe fehlt im python-build-standalone-Archiv'
+    }
+    Write-Host "Python im Archiv: $($pythonExe.FullName)"
     $pythonDir = Join-Path $runtime 'python'
     Copy-Item -LiteralPath $pythonExe.Directory.FullName -Destination $pythonDir -Recurse
     $portablePython = Join-Path $pythonDir 'python.exe'

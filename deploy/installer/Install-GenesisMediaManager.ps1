@@ -112,7 +112,7 @@ if (Test-Path $InstallDir) {
 }
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 
-foreach ($part in @("client", "backend", "i18n")) {
+foreach ($part in @("client", "backend", "i18n", "runtime")) {
     $src = Join-Path $PackageRoot $part
     $dst = Join-Path $InstallDir $part
     if (-not (Test-Path $src)) {
@@ -136,24 +136,14 @@ Write-Ok "Programmdateien nach '$InstallDir' kopiert (Client/Core-Service/Sprach
 Get-ChildItem -Path $InstallDir -Recurse -Filter "*.ps1" -ErrorAction SilentlyContinue |
     Unblock-File -ErrorAction SilentlyContinue
 
-# --- 2) Python-Laufzeitumgebung fuer den Core-Service --------------------
-# Ausgelagert nach Setup-PythonRuntime.ps1, damit MSI-Installation (siehe
-# wix/Product.wxs, CustomAction nach Dateiinstallation) und dieser einfache
-# PowerShell-Installer dieselbe Logik verwenden.
-#
-# b) Bewusst als EIGENER powershell.exe-Prozess mit explizitem
-# "-ExecutionPolicy Bypass" gestartet (statt per "&" im selben Prozess
-# aufzurufen): "Bypass" bedeutet laut Microsoft-Dokumentation "nichts wird
-# blockiert, keine Warnungen/Eingabeaufforderungen" - unabhaengig von einer
-# evtl. verbliebenen Mark-of-the-Web-Markierung der Datei. Zusammen mit dem
-# Unblock-File weiter oben (Punkt a) damit doppelt abgesichert gegen genau
-# den "ist nicht digital signiert"-Fehler, der bei einem echten Nutzer
-# aufgetreten ist, obwohl dieses Hauptskript selbst anlief.
+# --- 2) Portable Runtime pruefen: KEIN Python/pip/Internet auf dem PC ---
+# Die Runtime kommt fertig eingerichtet aus dem Windows-CI-Build. Nicht
+# das alte Setup-PythonRuntime.ps1 aufrufen, das pip/Internet voraussetzt.
 if (-not $SkipPythonSetup) {
-    $setupScript = Join-Path $ScriptRoot "Setup-PythonRuntime.ps1"
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $setupScript -InstallDir $InstallDir
+    $checkScript = Join-Path $ScriptRoot 'Test-OfflineRuntime.ps1'
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $checkScript -InstallDir $InstallDir
     if ($LASTEXITCODE -ne 0) {
-        throw "Setup-PythonRuntime.ps1 ist fehlgeschlagen (Exit-Code $LASTEXITCODE) - Installation abgebrochen."
+        throw "Offline-Runtime ist unvollstaendig (Exit-Code $LASTEXITCODE). Paket erneut herunterladen."
     }
 }
 

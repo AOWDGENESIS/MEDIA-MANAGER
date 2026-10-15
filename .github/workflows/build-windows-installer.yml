@@ -77,11 +77,8 @@ jobs:
             exit 1
           }
 
-      - name: Python 3.11 fuer den Installations-Smoke-Test bereitstellen
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
+      # Absichtlich KEIN setup-python: die drei Installer muessen ihre
+      # mitgelieferte Runtime auch ohne Python auf dem PC starten koennen.
       - name: Inno-Setup-EXE installieren, Core pruefen und deinstallieren
         shell: pwsh
         timeout-minutes: 20

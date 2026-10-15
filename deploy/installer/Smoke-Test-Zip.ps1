@@ -9,11 +9,12 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+. (Join-Path $repoRoot 'deploy\installer\Set-OfflineTestEnvironment.ps1')
 $zip = Join-Path $repoRoot 'build\GenesisMediaManager-Setup.zip'
 $extractDir = Join-Path $env:RUNNER_TEMP 'genesis-zip-smoke'
 $installDir = Join-Path $env:LOCALAPPDATA 'Programs\GenesisMediaManager'
 $client = Join-Path $installDir 'client\GenesisMediaManager.exe'
-$python = Join-Path $installDir '.venv\Scripts\python.exe'
+$python = Join-Path $installDir 'runtime\python\python.exe'
 $sentinel = Join-Path $env:APPDATA 'GenesisMediaManager\ci-zip-user-data.txt'
 
 if (-not (Test-Path $zip)) { throw "Paket-ZIP fehlt: $zip" }
@@ -36,8 +37,9 @@ try {
                         (Join-Path $installDir 'backend\run_api.py'))) {
         if (-not (Test-Path $file)) { throw "ZIP-Installation unvollstaendig: $file" }
     }
-    & $python -c 'import fastapi, sqlalchemy, uvicorn'
-    if ($LASTEXITCODE -ne 0) { throw 'ZIP-Core-Abhaengigkeiten nicht importierbar' }
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+        (Join-Path $extractDir 'installer\Test-OfflineRuntime.ps1') -InstallDir $installDir
+    if ($LASTEXITCODE -ne 0) { throw 'ZIP-Offline-Runtime nicht lauffaehig' }
 
     Write-Host 'Pruefe den mitgelieferten ZIP-Schnellstart'
     & $env:ComSpec /d /c ('"' + (Join-Path $extractDir 'start.bat') + '"')

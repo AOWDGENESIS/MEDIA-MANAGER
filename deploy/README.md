@@ -1,106 +1,48 @@
-# Deployment — Windows-Installationspaket
+# Windows-Paketierung und Installation
 
-Dieser Ordner enthaelt alles, was zum Bauen eines testbaren
-Windows-Installationspakets fuer GENESIS Media Manager noetig ist (Client
-+ Core-Service zusammen, Originalauftrag/Nutzerwunsch: "Client + Backend
-zusammen" + "echtes MSI").
+`Build-Package.ps1` veröffentlicht unter Windows x64 den WPF/.NET-Client,
+Python-Core, Python 3.11 samt installierten Kernpaketen, FFmpeg/FFprobe und
+Chromaprint/fpcalc in einem **offline installierbaren** Paket. Der Build-
+Runner lädt die externen Binaries mit festen SHA-256-Prüfsummen und
+installiert Python-Pakete nur **beim Bau**. Für den Ziel-PC sind weder
+Python noch pip noch Internet nötig. Die Quelltexte und Lizenzen der
+externen Komponenten sind unter `runtime/licenses/SOURCES.txt`
+referenziert; die Python-Lizenzdateien bleiben im `runtime/python`-Baum.
+Optionale KI-/TTS-Modelle sind nicht Bestandteil des Pakets.
 
-## Bestandteile
+## Windows-Build
 
-- **`Build-Package.ps1`** — die einzige Quelle der Wahrheit fuer den
-  Paketierungsvorgang. Baut den .NET/WPF-Client self-contained fuer
-  `win-x64` (`dotnet publish`), stellt den Python-Core-Service-Quellcode
-  samt Laufzeit-`requirements.txt` zusammen, kopiert die gemeinsamen
-  `i18n/`-Sprachkataloge und die Installer-Skripte, packt alles in ein
-  ZIP und kann optional (`-BuildMsi`) zusaetzlich das echte MSI mit dem
-  WiX-Toolset bauen.
-- **`installer/`** — Installations-, Laufzeit- und Deinstallationsskripte
-  des einfachen Windows-Wegs (auch ohne WiX/Inno):
-  - `Install-GenesisMediaManager.ps1` — kopiert die Programmdateien nach
-    `%LOCALAPPDATA%\Programs\GenesisMediaManager`, richtet eine virtuelle
-    Python-Umgebung fuer den Core-Service ein, legt Startmenue-/
-    Desktop-Verknuepfungen an und traegt das Programm unter
-    "Apps & Features" ein. Kein Admin noetig.
-  - `Setup-PythonRuntime.ps1` — die Python-venv-/pip-Logik, ausgelagert
-    aus `Install-GenesisMediaManager.ps1`, damit sie UNVERAENDERT auch
-    vom MSI (als CustomAction nach der Dateiinstallation) wiederverwendet
-    werden kann, statt zwei leicht unterschiedliche Kopien zu pflegen.
-  - `Uninstall-GenesisMediaManager.ps1` — entfernt Programmdateien,
-    Verknuepfungen und den Registry-Eintrag; laesst Mediathek-Daten/
-    Einstellungen unter `%APPDATA%\GenesisMediaManager` bewusst
-    unangetastet (kein stiller Datenverlust).
-  - `Stop-GenesisProcesses.ps1` — beendet vor der Inno-Deinstallation
-    gezielt nur Client und Core dieser Installation.
-  - `Start-GenesisMediaManager.bat` — gemeinsamer Startweg aller Pakete.
-- **`wix/Product.wxs`** — das WiX-v5-Installationsprojekt fuer ein MSI.
-- **`inno/GenesisMediaManager.iss`** — Inno-Setup-6-Skript fuer eine
-  Setup-EXE (x64, ohne Administratorrechte). Erwartet den von
-  `Build-Package.ps1` erzeugten Ordner `build/package` mit dem gebauten
-  Client und Backend; die `.iss` allein enthaelt keine Programmdateien.
-  Sie verwendet dasselbe `Setup-PythonRuntime.ps1` wie ZIP/MSI und zeigt
-  den Programmstart erst nach erfolgreicher Python-Einrichtung an.
-
-## Wichtige Einschraenkung: MSI kann NICHT in der Linux-Sandbox gebaut werden
-
-Das WiX-Toolset erzeugt MSI-Dateien ueber die Windows-Installer-COM-APIs
-und funktioniert deshalb grundsaetzlich nur unter echtem Windows - unter
-Linux bricht `wix build` schon beim ersten `<Directory>`-Element mit
-`WIX0389: The Directory/@Name attribute's value ... is not a relative
-path` ab (bekannter, von den WiX-Maintainern bestaetigter Linux-Bug, siehe
-https://github.com/wixtoolset/issues/issues/7154 und
-https://github.com/orgs/wixtoolset/discussions/7972). `deploy/wix/Product.wxs`
-wurde in dieser Sandbox daher nur bis zur Compiler-/Schema-Ebene geprueft
-(alle *eigenen* Fehler - falsch sitzende `Return="asyncNoWait"`-Attribute,
-eine ungueltige `Property`-Selbstreferenz, eine veraltete
-Inline-Text-Condition - wurden dabei tatsaechlich gefunden und behoben;
-siehe PROGRESS.md). Ein echtes MSI entsteht automatisch und verifiziert
-ueber den GitHub-Actions-Workflow
-`.github/workflows/build-windows-installer.yml` (laeuft auf
-`windows-latest`) bei Pushes auf den Arbeitsbranch. Der Workflow ist
-noch nicht auf dem Default-Branch `main`; `Run workflow` erscheint auf
-GitHub deshalb derzeit nicht. Nach gruenem Lauf liegt unter **Artifacts**
-ein einziges `GenesisMediaManager-Komplettpaket-zip` mit Setup-EXE, MSI,
-alternativem Installations-ZIP, `.iss`, Anleitung und Quellcode
-(GitHub-Login kann noetig sein). Fuer die PC-Installation nur die
-enthaltene `GenesisMediaManager-Inno-Setup.exe` starten.
-
-## Lokal von Hand bauen (auf echtem Windows mit WiX)
+Voraussetzungen **nur auf dem Build-Rechner**: Windows x64, .NET SDK 8,
+PowerShell 7, Git; für MSI WiX v5 und für EXE Inno Setup 6.
 
 ```powershell
-dotnet tool install --global wix --version 5.0.2
-./deploy/Build-Package.ps1 -BuildMsi
+./deploy/Build-Package.ps1 -BuildMsi -BuildInno
 ```
 
-## Inno-Setup-EXE bauen (Windows)
+Ergebnis: `build/GenesisMediaManager-Inno-Setup.exe`,
+`build/package/GenesisMediaManager-Setup.msi` und
+`build/GenesisMediaManager-Setup.zip`. Der GitHub-Actions-Workflow
+`.github/workflows/build-windows-installer.yml` erstellt alle drei,
+prüft Installation/Core/Deinstallation unter Windows und lädt unter
+**Artifacts** genau ein `GenesisMediaManager-Komplettpaket-zip` hoch. Der
+Workflow liegt bislang nur auf dem Arbeitsbranch; „Run workflow“ steht
+auf `main` noch nicht zur Verfügung.
 
-Inno Setup 6 und .NET SDK 8 unter Windows installieren. Im Repo-Root:
+`-SkipOfflineRuntime` ist **nur** für lokale Entwickler-Builds ohne
+portable Runtime vorgesehen; so erzeugte Pakete dürfen nicht an
+Endnutzer verteilt werden. Eine bloße `.iss` ohne zuvor gebautes
+`build/package` ist keine installierbare Datei. Linux kann WiX/MSI und
+den Windows-x64-Runtime-Build nicht vollständig ausführen.
 
-```powershell
-./deploy/Build-Package.ps1 -BuildInno
-```
+## Installieren
 
-Ergebnis: `build/GenesisMediaManager-Inno-Setup.exe`. Fuer einen manuellen
-Kompilierungslauf mit Inno Setup zuerst
-`./deploy/Build-Package.ps1 -SkipZip` ausfuehren; danach
-`ISCC.exe deploy\inno\GenesisMediaManager.iss`. Der Windows-CI-Workflow
-baut und veroeffentlicht die Setup-EXE ebenfalls als Artefakt. Der
-Windows-CI-Smoke-Test installiert sie im Benutzerprofil, prueft die lokale
-Core-API und deinstalliert sie; er ersetzt keinen visuellen GUI-Test auf
-einem echten Desktop-PC.
-**Python 3.11+ und Internet** sind auf dem Ziel-PC fuer die einmalige
-Einrichtung des lokalen Core-Service noetig. Eine bestehende MSI- oder
-PowerShell-Installation bitte vorher deinstallieren (gleicher Zielordner,
-unterschiedliche Deinstallationsmechanismen); Nutzerdaten bleiben erhalten.
-Setup ist derzeit nicht digital signiert.
+Die Anleitung für Nutzer steht in `README-INSTALL.md`. Inno-EXE, MSI und
+ZIP/PowerShell sind **Alternativen** mit demselben Zielordner; nicht
+übereinander installieren. Im Zweifel die Inno-EXE verwenden. Die
+Benutzerdaten unter `%APPDATA%\GenesisMediaManager` werden beim
+Deinstallieren nicht entfernt. Das Setup ist nicht digital signiert.
 
-## Lokal bauen OHNE MSI (funktioniert auch in der Linux-Sandbox)
-
-```bash
-export PATH=/opt/dotnet:$PATH:/home/user/.dotnet/tools DOTNET_ROOT=/opt/dotnet NUGET_PACKAGES=/opt/nuget-packages HOME=/home/user
-pwsh -NoProfile -File deploy/Build-Package.ps1
-```
-
-Ergebnis: `build/GenesisMediaManager-Setup.zip` (entpackt: `client/` +
-`backend/` + `i18n/` + `installer/`) - direkt per
-`installer/Install-GenesisMediaManager.ps1` auf einem echten
-Windows-Rechner installierbar.
+`deploy/Build-DownloadBundle.ps1` sammelt die gebauten Dateien, Bauskript,
+Quellcode und SHA-256-Liste erst auf dem Windows-CI-Runner. Große Binär-
+und temporäre Dateien gehören nicht in das Git-Repository oder den
+Entwicklungs-Workspace (100-MB-Grenze).

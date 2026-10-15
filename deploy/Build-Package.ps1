@@ -34,7 +34,8 @@ param(
     [string]$OutputDir = (Join-Path $PSScriptRoot "..\build\package"),
     [switch]$BuildMsi,
     [switch]$BuildInno,
-    [switch]$SkipZip
+    [switch]$SkipZip,
+    [switch]$SkipOfflineRuntime
 )
 
 $ErrorActionPreference = "Stop"
@@ -105,6 +106,17 @@ Write-Step "Kopiere gemeinsame i18n-Kataloge"
 Copy-Item -Path (Join-Path $RepoRoot "i18n") -Destination (Join-Path $OutputDir "i18n") -Recurse -Force
 Write-Ok "i18n-Ordner auf Paketwurzel-Ebene kopiert"
 
+# --- 3b) Portable Python-Laufzeit und Medienwerkzeuge (nur Build-Runner) --
+if (-not $SkipOfflineRuntime) {
+    if (-not $IsWindows) {
+        throw 'Das vollstaendige Offline-Paket kann nur auf Windows x64 gebaut werden. -SkipOfflineRuntime nur fuer lokale Entwickler-Builds verwenden.'
+    }
+    Write-Step 'Baue portable Python-Laufzeit und Medienwerkzeuge'
+    & (Join-Path $PSScriptRoot 'Build-OfflineRuntime.ps1') -PackageDir $OutputDir
+} else {
+    Write-Warning 'ENTWICKLER-BUILD OHNE OFFLINE-RUNTIME: nicht als Windows-Installer verteilen!'
+}
+
 # --- 4) Installer-Skripte + Endnutzer-Anleitung -----------------------------
 Write-Step "Kopiere Installer-Skripte und Anleitung"
 Copy-Item -Path (Join-Path $PSScriptRoot "installer") -Destination (Join-Path $OutputDir "installer") -Recurse -Force
@@ -138,7 +150,10 @@ rem Unvollstaendige Installation (z.B. Python beim ersten Mal gefehlt)?
 rem Dann NICHT blind nur die Client-EXE starten, sondern reparieren.
 if not exist "%INSTALLDIR%\client\GenesisMediaManager.exe" goto :install
 if not exist "%INSTALLDIR%\backend\run_api.py" goto :install
-if not exist "%INSTALLDIR%\.venv\Scripts\pythonw.exe" goto :install
+if not exist "%INSTALLDIR%\runtime\python\pythonw.exe" goto :install
+if not exist "%INSTALLDIR%\runtime\tools\ffmpeg\ffmpeg.exe" goto :install
+if not exist "%INSTALLDIR%\runtime\tools\ffmpeg\ffprobe.exe" goto :install
+if not exist "%INSTALLDIR%\runtime\tools\chromaprint\fpcalc.exe" goto :install
 if not exist "%INSTALLDIR%\Start-GenesisMediaManager.bat" goto :install
 goto :start
 
@@ -152,8 +167,7 @@ if exist "%INSTALLDIR%\unins000.exe" (
 )
 echo ============================================================
 echo  GENESIS Media Manager wird zum ersten Mal eingerichtet ...
-echo  (einmaliger Vorgang, braucht kurz Internetzugang fuer die
-echo   Python-Laufzeitumgebung des lokalen Core-Service)
+echo  (Python und Medienwerkzeuge sind enthalten - kein Download noetig)
 echo ============================================================
 powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPTDIR%installer\Install-GenesisMediaManager.ps1"
 if errorlevel 1 (
@@ -186,6 +200,7 @@ if ($BuildMsi) {
         -d "ClientSourceDir=$(Join-Path $OutputDir 'client')" `
         -d "BackendSourceDir=$(Join-Path $OutputDir 'backend')" `
         -d "I18nSourceDir=$(Join-Path $OutputDir 'i18n')" `
+        -d "RuntimeSourceDir=$(Join-Path $OutputDir 'runtime')" `
         -d "InstallerSourceDir=$(Join-Path $OutputDir 'installer')" `
         -d "StartScriptSource=$(Join-Path $PSScriptRoot 'installer\Start-GenesisMediaManager.bat')" `
         -d "MsiOwnerSource=$(Join-Path $PSScriptRoot 'wix\MsiOwnership.txt')" `

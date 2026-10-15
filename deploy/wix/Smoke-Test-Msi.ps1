@@ -9,10 +9,11 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+. (Join-Path $repoRoot 'deploy\installer\Set-OfflineTestEnvironment.ps1')
 $msi = Join-Path $repoRoot 'build\package\GenesisMediaManager-Setup.msi'
 $installDir = Join-Path $env:LOCALAPPDATA 'Programs\GenesisMediaManager'
 $client = Join-Path $installDir 'client\GenesisMediaManager.exe'
-$python = Join-Path $installDir '.venv\Scripts\python.exe'
+$python = Join-Path $installDir 'runtime\python\python.exe'
 $backend = Join-Path $installDir 'backend\run_api.py'
 $sentinel = Join-Path $env:APPDATA 'GenesisMediaManager\ci-msi-user-data.txt'
 $installLog = Join-Path $env:RUNNER_TEMP 'genesis-msi-install.log'
@@ -25,12 +26,11 @@ if (Test-Path $client) { throw "MSI-Test braucht einen freien Programmordner: $c
 
 try {
     Write-Host 'Installiere MSI im frischen Benutzerprofil (nach Inno-Deinstallation)'
-    # setup-python@v6 erweitert nur den PATH des CI-Prozesses. Der MSI-
-    # Dienst erbt ihn nicht; den bereits geprueften Interpreter uebergeben.
-    $pythonFromCi = (Get-Command python -ErrorAction Stop).Source
+    # Kein Python auf PATH und pip ohne Netzwerk: MSI muss komplett aus
+    # seinen eigenen Installationsdateien funktionieren.
     $p = Start-Process -FilePath msiexec.exe -ArgumentList @(
         '/i', ('"' + $msi + '"'), '/qn', '/norestart',
-        ('GENESIS_PYTHON="' + $pythonFromCi + '"'), '/l*v', ('"' + $installLog + '"')
+        '/l*v', ('"' + $installLog + '"')
     ) -PassThru -Wait
     if ($p.ExitCode -ne 0) { throw "MSI-Installation fehlgeschlagen: $($p.ExitCode)" }
     foreach ($file in @($client, $backend, (Join-Path $installDir 'Start-GenesisMediaManager.bat'),
@@ -38,8 +38,8 @@ try {
         if (-not (Test-Path $file)) { throw "MSI enthaelt Datei nicht: $file" }
     }
 
-    # Die MSI-Custom-Action wartet jetzt selbst auf pip und prueft den
-    # Exit-Code. Zusaetzlich den benutzbaren Core statt nur die Datei pruefen.
+    # MSI validiert die mitgelieferte Offline-Runtime vor Erfolgsanzeige.
+    # Zusaetzlich den tatsaechlich benutzbaren Core pruefen.
     if (-not (Test-Path $python)) { throw 'MSI hat keine Python-Umgebung angelegt' }
     & $python -c 'import fastapi, sqlalchemy, uvicorn'
     if ($LASTEXITCODE -ne 0) { throw 'MSI-Core-Abhaengigkeiten nicht importierbar' }
@@ -95,7 +95,10 @@ try {
     if ($p.ExitCode -ne 0) { throw "MSI-Deinstallation fehlgeschlagen: $($p.ExitCode)" }
     if (Test-Path $client) { throw 'MSI-Deinstallation hat Client hinterlassen' }
     if (Test-Path (Join-Path $installDir 'MsiOwnership.txt')) { throw 'MSI-Deinstallation hat Besitzer-Marker hinterlassen' }
-    if (Test-Path $python) { throw 'MSI-Deinstallation hat venv hinterlassen' }
+    if (Test-Path $python) { throw 'MSI-Deinstallation hat portable Python-Runtime hinterlassen' }
+    if (Test-Path (Join-Path $installDir 'runtime\tools\chromaprint\fpcalc.exe')) {
+        throw 'MSI-Deinstallation hat fpcalc hinterlassen'
+    }
     if (-not (Test-Path $sentinel)) { throw 'MSI-Deinstallation hat Benutzerdaten geloescht' }
     Write-Host 'MSI-Smoke-Test erfolgreich: Installation, Core /health, Deinstallation, Benutzerdaten erhalten.'
 } catch {
@@ -104,8 +107,8 @@ try {
         if (Test-Path $log) {
             Write-Host "Diagnose aus $log"
             if ($log -eq $installLog) {
-                $matches = @(Select-String -Path $log -Pattern 'RunPythonSetup|powershell.exe|Return value 3|Error 1721|Error 1722')
-                Write-Host "::error::MSI-Log: $($matches.Count) Zeilen zur Python-Custom-Action"
+                $matches = @(Select-String -Path $log -Pattern 'ValidateOfflineRuntime|powershell.exe|Return value 3|Error 1721|Error 1722')
+                Write-Host "::error::MSI-Log: $($matches.Count) Zeilen zur Offline-Custom-Action"
                 $matches | Select-Object -First 18 | ForEach-Object {
                     $message = ($_.Line -replace '%', '%25') -replace '[\r\n]+', ' '
                     Write-Host "::error::$message"

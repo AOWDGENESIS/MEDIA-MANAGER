@@ -9,10 +9,11 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+. (Join-Path $repoRoot 'deploy\installer\Set-OfflineTestEnvironment.ps1')
 $setup = Join-Path $repoRoot 'build\GenesisMediaManager-Inno-Setup.exe'
 $installDir = Join-Path $env:LOCALAPPDATA 'Programs\GenesisMediaManager'
 $uninstall = Join-Path $installDir 'unins000.exe'
-$python = Join-Path $installDir '.venv\Scripts\python.exe'
+$python = Join-Path $installDir 'runtime\python\python.exe'
 $dataDir = Join-Path $env:APPDATA 'GenesisMediaManager'
 $sentinel = Join-Path $dataDir 'ci-keep-user-data.txt'
 $log = Join-Path $env:RUNNER_TEMP 'genesis-inno-install.log'
@@ -53,6 +54,9 @@ try {
         (Join-Path $installDir 'client\GenesisMediaManager.exe'),
         (Join-Path $installDir 'backend\run_api.py'),
         (Join-Path $installDir 'Start-GenesisMediaManager.bat'),
+        (Join-Path $installDir 'runtime\tools\ffmpeg\ffmpeg.exe'),
+        (Join-Path $installDir 'runtime\tools\ffmpeg\ffprobe.exe'),
+        (Join-Path $installDir 'runtime\tools\chromaprint\fpcalc.exe'),
         $python,
         $uninstall
     )) {
@@ -74,9 +78,10 @@ try {
     }
     if (-not (Test-Path $uninstall)) { throw 'MSI-Konflikttest hat den Inno-Uninstaller veraendert' }
 
-    Write-Host 'Pruefe installierte Python-Abhaengigkeiten und Core-API /health'
-    & $python -c 'import fastapi, sqlalchemy, uvicorn'
-    if ($LASTEXITCODE -ne 0) { throw 'Python-Laufzeitabhaengigkeiten fehlen' }
+    Write-Host 'Pruefe Offline-Runtime ohne globales Python, Internet oder pip'
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+        (Join-Path $installDir 'installer\Test-OfflineRuntime.ps1') -InstallDir $installDir
+    if ($LASTEXITCODE -ne 0) { throw 'Mitgelieferte Offline-Runtime unvollstaendig' }
 
     $apiScript = Join-Path $installDir 'backend\run_api.py'
     # Der Test nutzt Port 18420 und einen separaten Datenordner, damit er
@@ -205,7 +210,7 @@ try {
         '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + $log + '"')
     ) -Wait -PassThru
     if ($updateProcess.ExitCode -ne 0) { throw "Update: Exit-Code $($updateProcess.ExitCode)" }
-    if (-not (Test-Path $python)) { throw 'Python-Umgebung nach Update nicht vorhanden' }
+    if (-not (Test-Path $python)) { throw 'Portable Python-Runtime nach Update nicht vorhanden' }
     if (-not (Test-Path $sentinel)) { throw 'Update hat Benutzerdaten geloescht' }
 
     # Anders als bisher: Bei der Deinstallation laufen App UND Core noch.
@@ -223,7 +228,10 @@ try {
         '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
     ) -Wait -PassThru
     if ($uninstallProcess.ExitCode -ne 0) { throw "Deinstallation: Exit-Code $($uninstallProcess.ExitCode)" }
-    if (Test-Path $python) { throw 'Uninstaller hat die Python-Umgebung nicht entfernt' }
+    if (Test-Path $python) { throw 'Uninstaller hat die portable Python-Runtime nicht entfernt' }
+    if (Test-Path (Join-Path $installDir 'runtime\tools\ffmpeg\ffmpeg.exe')) {
+        throw 'Uninstaller hat ffmpeg hinterlassen'
+    }
     if (Test-Path (Join-Path $installDir 'client\GenesisMediaManager.exe')) { throw 'Uninstaller hat den Client nicht entfernt' }
     if (@(Get-InstalledCoreProcesses).Count -gt 0) { throw 'Uninstaller hat einen laufenden Core-Prozess hinterlassen' }
     if (-not (Test-Path $sentinel)) { throw 'Uninstaller hat Benutzerdaten geloescht' }

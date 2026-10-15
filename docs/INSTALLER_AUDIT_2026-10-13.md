@@ -1,5 +1,11 @@
 # GENESIS Media Manager – Installer-Audit (13.10.2026, aktualisiert 15.10.2026)
 
+> Historischer Audit der vorherigen, Python/pip auf dem Ziel-PC voraussetzenden
+> Pakete. Der neue Offline-Build bringt Python, Pakete und Medienwerkzeuge
+> mit und muss separat im zugehörigen CI-Lauf aus `BUILDINFO.txt` geprüft
+> werden. Die nachfolgende Voraussetzung „Python auf PATH + Internet“ gilt
+> nur für das frühere, hier geprüfte Artefakt, nicht für das Offline-Paket.
+
 ## Ergebnis
 
 Der hier geprüfte Windows-Build ist erfolgreich: [GitHub-Actions-Lauf 38702688565](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38702688565). Der Lauf hat **0 GitHub-Annotationen** und erzeugte drei nicht abgelaufene Einzelartefakte. Neuere Läufe bündeln diese Dateien in **einem** Download-Artefakt:

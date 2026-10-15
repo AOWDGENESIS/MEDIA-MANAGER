@@ -10,9 +10,11 @@ set "DATADIR=%APPDATA%\GenesisMediaManager"
 if not exist "%DATADIR%" mkdir "%DATADIR%" >nul 2>&1
 set "LOGFILE=%DATADIR%\core-service.log"
 
-if not exist "%INSTALLDIR%.venv\Scripts\pythonw.exe" (
-    echo [GENESIS] Python-Laufzeitumgebung fehlt - Core-Service kann nicht gestartet werden.
-    echo [GENESIS] Bitte Install-GenesisMediaManager.ps1 erneut ausfuehren, nachdem Python installiert wurde.
+rem Alle Medienwerkzeuge und Python sind im Installationsordner enthalten.
+rem PATH gilt nur fuer diesen Start und den Core-Kindprozess, nicht global.
+set "PATH=%INSTALLDIR%runtime\tools\ffmpeg;%INSTALLDIR%runtime\tools\chromaprint;%PATH%"
+if not exist "%INSTALLDIR%runtime\python\pythonw.exe" (
+    echo [GENESIS] Offline-Runtime fehlt - bitte Setup-EXE erneut ausfuehren.
     pause
     exit /b 1
 )
@@ -31,7 +33,7 @@ if not errorlevel 1 (
 REM pythonw.exe zeigt bewusst kein Konsolenfenster. Fehler gehen ins Log,
 REM nicht ins Leere (siehe README-INSTALL.md).
 echo [GENESIS] Core-Service wird gestartet, Log: %LOGFILE%
-start "" /B "%INSTALLDIR%.venv\Scripts\pythonw.exe" "%INSTALLDIR%backend\run_api.py" > "%LOGFILE%" 2>&1
+start "" /B "%INSTALLDIR%runtime\python\pythonw.exe" "%INSTALLDIR%backend\run_api.py" > "%LOGFILE%" 2>&1
 
 REM Statt einer starren, oft zu kurzen Wartezeit (frueher: feste 2
 REM Sekunden) aktiv auf Erreichbarkeit warten, maximal 60 Sekunden. Der

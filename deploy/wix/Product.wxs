@@ -16,13 +16,10 @@
 
   Installiert pro Benutzer (kein Admin noetig) nach
   %LOCALAPPDATA%\Programs\GenesisMediaManager - Client (self-contained
-  .NET/WPF), Core-Service-Quellcode (Python) und die gemeinsamen
-  i18n-Sprachkataloge. Die Python-Laufzeitumgebung fuer den Core-Service
-  wird NICHT von MSI selbst verwaltet (Windows Installer eignet sich
-  schlecht fuer laengere Netzwerkoperationen wie "pip install"), sondern
-  per synchroner CustomAction ueber Setup-PythonRuntime.ps1 eingerichtet
-  (dieselbe Logik wie beim einfachen PowerShell-Installer, siehe
-  installer/Install-GenesisMediaManager.ps1).
+  .NET/WPF), Core-Service-Quellcode, portable Python-Laufzeit mit
+  vorinstallierten Abhaengigkeiten, ffmpeg/ffprobe/fpcalc und i18n.
+  Weder pip noch Internet oder Python auf dem Ziel-PC erforderlich;
+  Test-OfflineRuntime.ps1 validiert die mitgelieferten Binaries.
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
@@ -65,6 +62,7 @@
           <Directory Id="ClientDir" Name="client" />
           <Directory Id="BackendDir" Name="backend" />
           <Directory Id="I18nDir" Name="i18n" />
+          <Directory Id="RuntimeDir" Name="runtime" />
           <Directory Id="InstallerDir" Name="installer" />
         </Directory>
       </Directory>
@@ -87,6 +85,9 @@
     </ComponentGroup>
     <ComponentGroup Id="I18nFiles" Directory="I18nDir">
       <Files Include="$(var.I18nSourceDir)\**" />
+    </ComponentGroup>
+    <ComponentGroup Id="RuntimeFiles" Directory="RuntimeDir">
+      <Files Include="$(var.RuntimeSourceDir)\**" />
     </ComponentGroup>
     <ComponentGroup Id="InstallerScriptFiles" Directory="InstallerDir">
       <Files Include="$(var.InstallerSourceDir)\*.ps1" />
@@ -133,26 +134,24 @@
                   Execute="immediate"
                   Return="check" />
 
-    <!-- Python nicht als Fire-and-forget starten: asyncNoWait meldete im
-         positiven MSI-Test Erfolg, obwohl nie ein .venv entstand. Der
-         Installer wartet jetzt auf den tatsaechlichen Exit-Code. Der
-         absolute PowerShell-Pfad vermeidet PATH-Unterschiede des MSI-
-         Dienstes. Installation pro Benutzer, Python bleibt extern. -->
-    <CustomAction Id="RunPythonSetup"
+    <!-- Runtime wurde auf dem Build-Runner bereits eingerichtet. Nur
+         lokal validieren; weder globales Python noch Netzwerk auf PC. -->
+    <CustomAction Id="ValidateOfflineRuntime"
                   Directory="INSTALLFOLDER"
-                  ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[InstallerDir]Setup-PythonRuntime.ps1&quot; -InstallDir &quot;[INSTALLFOLDER].&quot; -PythonExecutable &quot;[GENESIS_PYTHON]&quot;"
+                  ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[InstallerDir]Test-OfflineRuntime.ps1&quot; -InstallDir &quot;[INSTALLFOLDER].&quot;"
                   Execute="immediate"
                   Return="check" />
 
     <InstallExecuteSequence>
       <Custom Action="CleanupMsiRuntime" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot;" />
-      <Custom Action="RunPythonSetup" After="InstallFinalize" Condition="NOT Installed" />
+      <Custom Action="ValidateOfflineRuntime" After="InstallFinalize" Condition="NOT Installed" />
     </InstallExecuteSequence>
 
     <Feature Id="MainFeature" Title="GENESIS Media Manager" Level="1">
       <ComponentGroupRef Id="ClientFiles" />
       <ComponentGroupRef Id="BackendFiles" />
       <ComponentGroupRef Id="I18nFiles" />
+      <ComponentGroupRef Id="RuntimeFiles" />
       <ComponentGroupRef Id="InstallerScriptFiles" />
       <ComponentRef Id="StartScript" />
       <ComponentRef Id="MsiOwnership" />

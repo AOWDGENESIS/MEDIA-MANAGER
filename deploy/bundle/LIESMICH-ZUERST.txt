@@ -1,28 +1,29 @@
-GENESIS MEDIA MANAGER - KOMPLETTPAKET
+GENESIS MEDIA MANAGER – WINDOWS-X64-OFFLINEPAKET
 
-Fuer die Installation auf einem Windows-PC:
-  1. Dieses GitHub-Artefakt (ZIP) vollstaendig entpacken.
-  2. Python 3.11 oder neuer installieren und zum PATH hinzufuegen.
-     Fuer die erste Einrichtung wird eine Internetverbindung benoetigt.
-  3. GenesisMediaManager-Inno-Setup.exe starten.
+Installation auf einem Windows-PC:
+  1. Dieses GitHub-Artefakt (ZIP) vollständig entpacken.
+  2. GenesisMediaManager-Inno-Setup.exe doppelklicken.
+  3. Den Schritten des Assistenten folgen und die App starten.
 
-Die Setup-EXE ist der empfohlene, unter Windows getestete Installationsweg.
-Sie enthaelt bereits den WPF-Client und den Python-Core-Quellcode, richtet
-aber die Python-Abhaengigkeiten beim Installieren ueber pip ein.
-Die Datei ist nicht digital signiert; Windows SmartScreen kann warnen.
+Python 3.11, Python-Core-Abhängigkeiten, ffmpeg, ffprobe und fpcalc sind
+im Installer enthalten. Auf dem Ziel-PC sind dafür weder Python,
+zusätzliche Downloads, pip noch Administratorrechte erforderlich.
 
-WEITERE DATEIEN (NICHT zusaetzlich ueber die EXE installieren):
+Weitere Dateien (NICHT zusätzlich über die EXE installieren):
   GenesisMediaManager-Setup.msi      alternative MSI-Installation
   GenesisMediaManager-Setup.zip      alternative ZIP-/start.bat-Installation
-  GenesisMediaManager.iss            Inno-Setup-Bauskript fuer Entwickler
-  GenesisMediaManager-Quellcode.zip  vollstaendiger getrackter Projektquellcode
-  README-INSTALL.md                  ausfuehrliche Installationsanleitung
-  INSTALLER_AUDIT.md                 Testergebnisse und bekannte Grenzen
-  BUILDINFO.txt                      Commit und Link zum zugehoerigen CI-Lauf
-  SHA256SUMS.txt                     SHA-256-Pruefsummen der Nutzdateien
+  GenesisMediaManager.iss            Inno-Setup-Bauskript für Entwickler
+  GenesisMediaManager-Quellcode.zip  getrackter Projektquellcode
+  README-INSTALL.md                  Anleitung und Einschränkungen
+  INSTALLER_AUDIT.md                 bisherige Testergebnisse
+  BUILDINFO.txt                      Commit und zugehöriger CI-Lauf
+  SHA256SUMS.txt                     SHA-256-Prüfsummen der Nutzdateien
 
-WICHTIG: EXE, MSI und ZIP sind drei alternative Installer fuer denselben
-Programmordner. Nur EINEN davon verwenden. Vor dem Wechsel zwischen den
-Varianten die bisherige Installation in Windows-Einstellungen > Apps
-entfernen; die Mediathek-Daten unter %APPDATA%\GenesisMediaManager bleiben
-erhalten. Der Quellcode allein ist keine Installationsdatei.
+Die drei Installationsarten verwenden denselben Programmordner. Nur
+EINE verwenden und vor einem Wechsel die andere deinstallieren.
+Benutzerdaten unter %APPDATA%\GenesisMediaManager bleiben erhalten.
+
+Nicht enthalten: persönliche Medien, Zugangsdaten, optionale lokale
+KI-Dienste/-Modelle (Ollama/LM Studio) und TTS-Stimmmodelle. Diese
+Funktionen sind nur mit gesondert verfügbaren Diensten/Modellen nutzbar.
+Die Setup-EXE ist nicht digital signiert; SmartScreen kann warnen.

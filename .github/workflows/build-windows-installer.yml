@@ -90,6 +90,11 @@ jobs:
         timeout-minutes: 20
         run: ./deploy/inno/Smoke-Test-Inno.ps1
 
+      - name: ZIP entpacken, installieren, Core pruefen und deinstallieren
+        shell: pwsh
+        timeout-minutes: 15
+        run: ./deploy/installer/Smoke-Test-Zip.ps1
+
       - name: MSI regulaer installieren, Core pruefen und deinstallieren
         shell: pwsh
         timeout-minutes: 12

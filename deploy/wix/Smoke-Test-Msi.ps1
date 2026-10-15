@@ -103,12 +103,15 @@ try {
     foreach ($log in @($installLog, $uninstallLog, $apiLog)) {
         if (Test-Path $log) {
             Write-Host "Diagnose aus $log"
-            Select-String -Path $log -Pattern 'RunPythonSetup|error|fehler|Return value 3|Setup-Python|GENESIS|powershell.exe' |
-                Select-Object -Last 30 | ForEach-Object {
+            if ($log -eq $installLog) {
+                $matches = @(Select-String -Path $log -Pattern 'RunPythonSetup|powershell.exe|Return value 3|Error 1721|Error 1722')
+                Write-Host "::error::MSI-Log: $($matches.Count) Zeilen zur Python-Custom-Action"
+                $matches | Select-Object -First 18 | ForEach-Object {
                     $message = ($_.Line -replace '%', '%25') -replace '[\r\n]+', ' '
                     Write-Host "::error::$message"
                 }
-            Get-Content $log -Tail 25
+            }
+            Get-Content $log -Tail 12
         }
     }
     throw

@@ -4940,3 +4940,23 @@ explizit, weil der CI-MSI-Dienst den temporären `setup-python`-PATH nicht
 übernimmt. Wie schon zuvor bleiben die visuelle Abnahme auf dem Nutzer-PC,
 SmartScreen/Signatur und Offline-Python-Einrichtung offen; siehe
 `docs/INSTALLER_AUDIT_2026-10-13.md`. Workspace ca. 11 MB (<100 MB).
+
+## Fortsetzung 33 – ein Komplettpaket-ZIP zum Download (15.10.2026)
+
+Auf Nutzerwunsch stellt der Windows-Workflow nach den erfolgreichen
+Inno-/ZIP-/MSI-Smoke-Tests alle Optionen in **einem** GitHub-Artefakt
+`GenesisMediaManager-Komplettpaket-zip` bereit. Das heruntergeladene ZIP
+enthaelt Inno-Setup-EXE (empfohlene Installation), MSI, alternatives
+Installations-ZIP, `.iss`, aus dem getesteten Commit archivierten
+Projektquellcode, Installationsanleitung, Audit, BUILDINFO mit Commit und
+Lauf-Link sowie SHA-256-Pruefsummen. Die drei Installer sind Alternativen;
+sie sollen nicht parallel installiert werden. Das aeussere ZIP wird von
+GitHub Actions aus einem temporaeren Windows-Runner-Ordner erstellt; weder
+gebaute Pakete noch das rund 248 MB grosse Download-Artefakt werden in den
+auf 100 MB begrenzten Workspace gelegt.
+
+[Windows-Lauf 38731138165](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38731138165):
+alle Windows-Tests und Bundle-Upload erfolgreich; genau ein, nicht
+abgelaufenes Artefakt (247.891.582 Bytes), 0 Check-Run-Annotationen.
+Workspace weiterhin ca. 11 MB. Das ZIP selbst ist ueber GitHub unter
+Artifacts zu laden (ggf. Anmeldung erforderlich).

@@ -233,6 +233,9 @@ public partial class MainWindow : Window
                     Tag = itemKey,
                 };
                 child.Tag = itemKey;
+                // Stabile Kennung fuer Accessibility und automatisierte
+                // Windows-UI-Navigationstests (sprachunabhaengig).
+                System.Windows.Automation.AutomationProperties.SetAutomationId(child, itemKey);
                 child.SetValue(FrameworkElement.ToolTipProperty, _tr.Tr(itemKey));
                 // The template uses Tag as the icon content, so keep the i18n key
                 // in the header element and expose the icon through Header's Tag.

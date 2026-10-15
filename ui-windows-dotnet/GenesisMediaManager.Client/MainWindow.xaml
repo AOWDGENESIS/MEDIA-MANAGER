@@ -40,6 +40,7 @@
                 </Grid>
 
                 <TreeView x:Name="NavTree" Grid.Row="1"
+                          VirtualizingStackPanel.IsVirtualizing="False"
                           Background="Transparent"
                           BorderThickness="0"
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled" />

@@ -45,10 +45,27 @@ try {
     Write-Host "Installiere Inno-Setup-EXE: $setup"
     # PowerShell wartet bei GUI-EXEs mit dem Call-Operator nicht immer auf
     # das Prozessende; -Wait/-PassThru liefert den echten Installer-Code.
+    Write-Host '::notice::Inno-Offline-Test: Starte Setup-EXE ohne System-Python/Internet'
     $installProcess = Start-Process -FilePath $setup -ArgumentList @(
         '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + $log + '"')
-    ) -Wait -PassThru
+    ) -PassThru
+    $finished = $false
+    for ($minute = 1; $minute -le 16; $minute++) {
+        if ($installProcess.WaitForExit(60000)) { $finished = $true; break }
+        $clientCopied = Test-Path (Join-Path $installDir 'client\GenesisMediaManager.exe')
+        $pythonCopied = Test-Path $python
+        $toolsCopied = Test-Path (Join-Path $installDir 'runtime\tools\ffmpeg\ffmpeg.exe')
+        Write-Host "::notice::Inno-Setup $minute min aktiv; Client=$clientCopied Python=$pythonCopied FFmpeg=$toolsCopied"
+    }
+    if (-not $finished) {
+        $children = Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -match 'Test-OfflineRuntime' } |
+            ForEach-Object { $_.CommandLine }
+        Write-Host "::error::Inno-Setup Zeitlimit; Offline-Pruefprozesse: $($children -join '; ')"
+        throw 'Inno-Setup hat nach 16 Minuten noch nicht abgeschlossen'
+    }
     if ($installProcess.ExitCode -ne 0) { throw "Setup-EXE: Exit-Code $($installProcess.ExitCode)" }
+    Write-Host '::notice::Inno-Offline-Test: Setup-EXE erfolgreich abgeschlossen'
 
     foreach ($path in @(
         (Join-Path $installDir 'client\GenesisMediaManager.exe'),
@@ -180,6 +197,10 @@ try {
         Start-Sleep -Seconds 1
     }
     if (-not $windowReady) { throw 'WPF-Client-Prozess laeuft, aber kein Hauptfenster-Handle gefunden' }
+
+    # Die Oberflaeche wirklich ueber ihre UI-Automation-Navigation
+    # bedienen, nicht nur einen Prozess oder ein HWND zaehlen.
+    & (Join-Path $repoRoot 'deploy\inno\Smoke-Test-UI.ps1') -ClientProcessId $candidate.Id
 
     # Zweiter Doppelklick bei laufendem Service darf keinen zweiten
     # pythonw-Prozess starten oder dessen Logdatei ueberschreiben.

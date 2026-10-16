@@ -7,6 +7,11 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$InstallDir)
 $ErrorActionPreference = 'Stop'
+trap {
+    $message = ($_.Exception.Message -replace '%', '%25') -replace '[\r\n]+', ' '
+    Write-Host "::error::Offline-Runtime: $message"
+    break
+}
 $runtime = Join-Path $InstallDir 'runtime'
 $python = Join-Path $runtime 'python\python.exe'
 $pythonw = Join-Path $runtime 'python\pythonw.exe'

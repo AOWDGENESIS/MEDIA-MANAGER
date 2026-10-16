@@ -83,9 +83,15 @@ jobs:
         shell: pwsh
         timeout-minutes: 5
         run: |
-          . ./deploy/installer/Set-OfflineTestEnvironment.ps1
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./deploy/installer/Test-OfflineRuntime.ps1 -InstallDir (Resolve-Path build/package).Path
-          if ($LASTEXITCODE -ne 0) { throw "Paket-Runtime nicht offline lauffaehig: $LASTEXITCODE" }
+          try {
+            . ./deploy/installer/Set-OfflineTestEnvironment.ps1
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./deploy/installer/Test-OfflineRuntime.ps1 -InstallDir (Resolve-Path build/package).Path
+            if ($LASTEXITCODE -ne 0) { throw "Paket-Runtime nicht offline lauffaehig: $LASTEXITCODE" }
+          } catch {
+            $message = ($_.Exception.Message -replace '%', '%25') -replace '[\r\n]+', ' '
+            Write-Host "::error::Offline-Preflight: $message"
+            throw
+          }
 
       - name: Inno-Setup-EXE installieren, Core pruefen und deinstallieren
         shell: pwsh

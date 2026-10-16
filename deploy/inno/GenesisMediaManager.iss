@@ -102,10 +102,13 @@ begin
     FileExists(ExpandConstant('{app}\runtime\python\python.exe'));
   if not PythonReady then
   begin
-    MsgBox('Die Programmdateien wurden kopiert, aber die enthaltene ' +
-      'Offline-Runtime ist unvollstaendig oder konnte nicht gestartet werden ' +
-      '(Exit-Code ' + IntToStr(ExitCode) + '). Bitte die Setup-EXE ' +
-      'erneut herunterladen. Die App wird jetzt nicht gestartet.', mbError, MB_OK);
+    Log('Offline-Runtime fehlgeschlagen (Exit-Code ' + IntToStr(ExitCode) + ')');
+    { Ein modales MsgBox in einem stillen CI-Lauf wuerde unbegrenzt warten. }
+    if not WizardSilent then
+      MsgBox('Die Programmdateien wurden kopiert, aber die enthaltene ' +
+        'Offline-Runtime ist unvollstaendig oder konnte nicht gestartet werden ' +
+        '(Exit-Code ' + IntToStr(ExitCode) + '). Bitte die Setup-EXE ' +
+        'erneut herunterladen. Die App wird jetzt nicht gestartet.', mbError, MB_OK);
   end;
 end;
 

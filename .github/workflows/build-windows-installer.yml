@@ -79,6 +79,14 @@ jobs:
 
       # Absichtlich KEIN setup-python: die drei Installer muessen ihre
       # mitgelieferte Runtime auch ohne Python auf dem PC starten koennen.
+      - name: Offline-Runtime im Paket vor der Installation pruefen
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          . ./deploy/installer/Set-OfflineTestEnvironment.ps1
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./deploy/installer/Test-OfflineRuntime.ps1 -InstallDir (Resolve-Path build/package).Path
+          if ($LASTEXITCODE -ne 0) { throw "Paket-Runtime nicht offline lauffaehig: $LASTEXITCODE" }
+
       - name: Inno-Setup-EXE installieren, Core pruefen und deinstallieren
         shell: pwsh
         timeout-minutes: 25

@@ -62,6 +62,17 @@ try {
             Where-Object { $_.CommandLine -match 'Test-OfflineRuntime' } |
             ForEach-Object { $_.CommandLine }
         Write-Host "::error::Inno-Setup Zeitlimit; Offline-Pruefprozesse: $($children -join '; ')"
+        if (Test-Path $log) {
+            Get-Content $log -Tail 16 | ForEach-Object {
+                $message = ($_.ToString() -replace '%', '%25') -replace '[\r\n]+', ' '
+                Write-Host "::error::Inno-Log: $message"
+            }
+        }
+        $related = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+            Where-Object { $_.ParentProcessId -eq $installProcess.Id } |
+            ForEach-Object { "$($_.Name): $($_.CommandLine)" }
+        Write-Host "::error::Inno-Kindprozesse: $($related -join '; ')"
+        Stop-Process -Id $installProcess.Id -Force -ErrorAction SilentlyContinue
         throw 'Inno-Setup hat nach 16 Minuten noch nicht abgeschlossen'
     }
     if ($installProcess.ExitCode -ne 0) { throw "Setup-EXE: Exit-Code $($installProcess.ExitCode)" }

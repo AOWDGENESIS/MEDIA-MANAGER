@@ -30,15 +30,24 @@ try {
         # Inno Setup startet einen entpackten Kindprozess mit /SL5; die
         # aeussere Setup-EXE hat selbst KEIN MainWindowHandle.
         $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($p.Id)" -ErrorAction SilentlyContinue)
-        $candidates = @($p) + @($children | ForEach-Object {
+        $candidates = @($children | ForEach-Object {
             Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue
-        })
+        }) + @($p)
         foreach ($candidate in $candidates) {
             $candidate.Refresh()
             if (-not $candidate.HasExited -and $candidate.MainWindowHandle -ne [IntPtr]::Zero) {
-                $wizardProcess = $candidate
-                $window = [System.Windows.Automation.AutomationElement]::FromHandle($candidate.MainWindowHandle)
-                if ($window) { break }
+                $possibleWindow = [System.Windows.Automation.AutomationElement]::FromHandle($candidate.MainWindowHandle)
+                if (-not $possibleWindow) { continue }
+                $buttonsCondition = [System.Windows.Automation.PropertyCondition]::new(
+                    [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                    [System.Windows.Automation.ControlType]::Button)
+                $possibleButtons = $possibleWindow.FindAll(
+                    [System.Windows.Automation.TreeScope]::Descendants, $buttonsCondition)
+                if ($possibleButtons.Count -gt 0) {
+                    $wizardProcess = $candidate
+                    $window = $possibleWindow
+                    break
+                }
             }
         }
         if ($window) { break }
@@ -50,6 +59,7 @@ try {
         Write-Host "::error::Inno-Kindprozesse ohne UI: $($diagnostics -join '; ')"
         throw 'Inno-Setup-Fenster nicht fuer Benutzerinteraktion erreichbar'
     }
+    Write-Host "::notice::Inno-Wizard-Fenster: PID=$($wizardProcess.Id), Titel=$($window.Current.Name), Buttons=$($possibleButtons.Count)"
     $clicks = @()
     for ($i=0; $i -lt 150; $i++) {
         $p.Refresh()
@@ -58,9 +68,17 @@ try {
             [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
             [System.Windows.Automation.ControlType]::Button)
         $buttons = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+        if ($i -eq 0 -or $i -eq 10) {
+            $buttonInfo = @($buttons | ForEach-Object {
+                "$($_.Current.Name) [enabled=$($_.Current.IsEnabled), offscreen=$($_.Current.IsOffscreen)]"
+            })
+            Write-Host "::notice::Inno-Wizard-Buttons: $($buttonInfo -join '; ')"
+        }
         $target = $null
         foreach ($button in $buttons) {
-            if ($button.Current.IsEnabled -and -not $button.Current.IsOffscreen -and
+            # CI-Runner haben ggf. keinen sichtbaren Desktop. InvokePattern
+            # funktioniert dort auch bei IsOffscreen=true.
+            if ($button.Current.IsEnabled -and
                 $button.Current.Name -match '(Weiter|Installieren|Fertigstellen|Next|Install|Finish)') {
                 $target = $button
                 break

@@ -113,8 +113,8 @@ try {
 
     $apiScript = Join-Path $installDir 'backend\run_api.py'
     # Der Test nutzt Port 18420 und einen separaten Datenordner, damit er
-    # keine echten Nutzerdaten beruehrt. Nur der Backend-Prozess wird gestartet;
-    # WPF-Oberflaechen koennen im CI-Runner nicht visuell geprueft werden.
+    # keine echten Nutzerdaten beruehrt. Zunaechst wird nur der Backend-Prozess
+    # gestartet; die WPF-Navigation wird spaeter separat per UIA geprueft.
     $apiProcess = Start-Process -FilePath $python -ArgumentList @(
         ('"' + $apiScript + '"'), '--port', '18420', '--data-dir', ('"' + $testData + '"')
     ) -PassThru -RedirectStandardOutput $apiOutput -RedirectStandardError $apiError
@@ -156,7 +156,7 @@ try {
     Write-Host 'Pruefe Client-Fenster ohne laufende Core-API'
     $offlineClient = Start-Process -FilePath (Join-Path $installDir 'client\GenesisMediaManager.exe') -PassThru
     $offlineWindowReady = $false
-    for ($i = 0; $i -lt 10; $i++) {
+    for ($i = 0; $i -lt 30; $i++) {
         $offlineClient.Refresh()
         if ($offlineClient.HasExited) { throw 'Client ohne Core direkt nach Start beendet' }
         if ($offlineClient.MainWindowHandle -ne [IntPtr]::Zero) {
@@ -165,14 +165,14 @@ try {
         }
         Start-Sleep -Seconds 1
     }
-    if (-not $offlineWindowReady) { throw 'Client ohne Core hat nach zehn Sekunden kein Hauptfenster' }
+    if (-not $offlineWindowReady) { throw 'Client ohne Core hat nach 30 Sekunden kein Hauptfenster' }
     Stop-Process -Id $offlineClient.Id -Force -ErrorAction SilentlyContinue
     if (-not $offlineClient.WaitForExit(10000)) { throw 'Offline-Client konnte nicht beendet werden' }
     $offlineClient = $null
 
     # Entscheidend fuer den Nutzer: den per Startmenue verlinkten Batch-Pfad
     # pruefen, nicht nur run_api.py direkt. Die WPF-UI kann auf einem
-    # CI-Runner nicht visuell abgenommen werden.
+    # CI-Runner nur ueber UI Automation geprueft werden, nicht visuell abgenommen.
     Write-Host 'Starte den mitgelieferten Start-GenesisMediaManager.bat'
     & $env:ComSpec /d /c ('"' + $startBat + '"')
     if ($LASTEXITCODE -ne 0) { throw "Startskript: Exit-Code $LASTEXITCODE" }

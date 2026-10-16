@@ -93,10 +93,20 @@ jobs:
             throw
           }
 
+      - name: Mitgelieferte FFmpeg- und Chromaprint-Werkzeuge praktisch pruefen
+        shell: pwsh
+        timeout-minutes: 3
+        run: ./deploy/installer/Smoke-Test-MediaTools.ps1 -PackageDir (Resolve-Path build/package).Path
+
       - name: Inno-Setup-EXE installieren, Core pruefen und deinstallieren
         shell: pwsh
         timeout-minutes: 25
         run: ./deploy/inno/Smoke-Test-Inno.ps1
+
+      - name: Inno-Installationsassistent wie Benutzer bedienen
+        shell: pwsh
+        timeout-minutes: 9
+        run: ./deploy/inno/Smoke-Test-Wizard.ps1
 
       - name: ZIP entpacken, installieren, Core pruefen und deinstallieren
         shell: pwsh

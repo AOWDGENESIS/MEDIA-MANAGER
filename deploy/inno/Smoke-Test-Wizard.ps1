@@ -18,21 +18,38 @@ $uninstall = Join-Path $installDir 'unins000.exe'
 $log = Join-Path $env:RUNNER_TEMP 'genesis-inno-wizard.log'
 if (Test-Path $client) { throw 'GUI-Wizard braucht eine frische Installation' }
 $p = $null
+$wizardProcess = $null
 try {
     $p = Start-Process -FilePath $setup -ArgumentList @(
         '/NORESTART', ('/LOG="' + $log + '"')
     ) -PassThru
     $window = $null
-    for ($i=0; $i -lt 30; $i++) {
+    for ($i=0; $i -lt 45; $i++) {
         $p.Refresh()
         if ($p.HasExited) { throw "Setup-Wizard vorzeitig beendet: $($p.ExitCode)" }
-        if ($p.MainWindowHandle -ne [IntPtr]::Zero) {
-            $window = [System.Windows.Automation.AutomationElement]::FromHandle($p.MainWindowHandle)
-            if ($window) { break }
+        # Inno Setup startet einen entpackten Kindprozess mit /SL5; die
+        # aeussere Setup-EXE hat selbst KEIN MainWindowHandle.
+        $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($p.Id)" -ErrorAction SilentlyContinue)
+        $candidates = @($p) + @($children | ForEach-Object {
+            Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue
+        })
+        foreach ($candidate in $candidates) {
+            $candidate.Refresh()
+            if (-not $candidate.HasExited -and $candidate.MainWindowHandle -ne [IntPtr]::Zero) {
+                $wizardProcess = $candidate
+                $window = [System.Windows.Automation.AutomationElement]::FromHandle($candidate.MainWindowHandle)
+                if ($window) { break }
+            }
         }
+        if ($window) { break }
         Start-Sleep -Seconds 1
     }
-    if (-not $window) { throw 'Inno-Setup-Fenster nicht fuer Benutzerinteraktion erreichbar' }
+    if (-not $window) {
+        $diagnostics = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($p.Id)" -ErrorAction SilentlyContinue |
+            ForEach-Object { "$($_.ProcessId):$($_.Name):$($_.CommandLine)" })
+        Write-Host "::error::Inno-Kindprozesse ohne UI: $($diagnostics -join '; ')"
+        throw 'Inno-Setup-Fenster nicht fuer Benutzerinteraktion erreichbar'
+    }
     $clicks = @()
     for ($i=0; $i -lt 150; $i++) {
         $p.Refresh()
@@ -81,6 +98,9 @@ try {
     if (Test-Path $log) { Get-Content $log -Tail 12 | ForEach-Object { Write-Host "::error::Inno-Wizard-Log: $_" } }
     throw
 } finally {
+    if ($wizardProcess -and -not $wizardProcess.HasExited) {
+        Stop-Process -Id $wizardProcess.Id -Force -ErrorAction SilentlyContinue
+    }
     if ($p -and -not $p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
     Get-Process -Name GenesisMediaManager -ErrorAction SilentlyContinue |
         Where-Object { $_.Path -eq $client } |

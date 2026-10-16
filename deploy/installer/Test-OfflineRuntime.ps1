@@ -29,8 +29,22 @@ if ($LASTEXITCODE -ne 0 -or -not [string]::Equals(
         [StringComparison]::OrdinalIgnoreCase)) {
     throw "Portable Python-Runtime nicht unabhaengig: sys.prefix=$actual (erwartet $expected)"
 }
-& $python -c 'import fastapi, sqlalchemy, uvicorn, yt_dlp, mutagen, pydantic_settings; print("Offline-Core-Abhaengigkeiten OK")'
-if ($LASTEXITCODE -ne 0) { throw 'Mitgelieferte Python-Pakete fehlen oder sind nicht importierbar' }
+foreach ($module in @('fastapi', 'sqlalchemy', 'uvicorn', 'yt_dlp', 'mutagen', 'pydantic_settings')) {
+    # Windows PowerShell 5.1 kann NativeCommandError auf stderr erzeugen;
+    # die echte Python-Traceback-Diagnose als CI-Annotation ausgeben.
+    $ErrorActionPreference = 'Continue'
+    $output = & $python -c "import $module" 2>&1
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($code -ne 0) {
+        $output | Select-Object -Last 8 | ForEach-Object {
+            $message = ($_.ToString() -replace '%', '%25') -replace '[\r\n]+', ' '
+            Write-Host "::error::Python $module`: $message"
+        }
+        throw "Mitgeliefertes Python-Paket nicht importierbar: $module (Code $code)"
+    }
+}
+Write-Host 'Offline-Core-Abhaengigkeiten OK'
 foreach ($tool in @($ffmpeg, $ffprobe, $fpcalc)) {
     & $tool -version 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Medienwerkzeug startet nicht: $tool" }

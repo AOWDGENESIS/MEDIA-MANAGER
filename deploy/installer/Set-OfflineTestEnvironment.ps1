@@ -14,6 +14,10 @@ $env:PIP_NO_INDEX = '1'
 $env:HTTP_PROXY = 'http://127.0.0.1:1'
 $env:HTTPS_PROXY = 'http://127.0.0.1:1'
 $env:ALL_PROXY = 'http://127.0.0.1:1'
+# Der lokale Core bindet ausschliesslich an Loopback; das ist kein
+# Internetzugriff und muss trotz des gesperrten Proxys erreichbar sein.
+$env:NO_PROXY = '127.0.0.1,localhost'
+$env:no_proxy = '127.0.0.1,localhost'
 if (Get-Command python -ErrorAction SilentlyContinue) { throw 'Offline-Test sieht noch globales Python' }
 if (Get-Command ffmpeg -ErrorAction SilentlyContinue) { throw 'Offline-Test sieht noch globales FFmpeg' }
 if (Get-Command fpcalc -ErrorAction SilentlyContinue) { throw 'Offline-Test sieht noch globales fpcalc' }

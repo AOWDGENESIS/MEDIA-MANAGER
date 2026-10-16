@@ -47,7 +47,7 @@ try {
     $healthy = $false
     for ($i = 0; $i -lt 25; $i++) {
         try {
-            $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 2
+            $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 2 -NoProxy
             if ($health.status -eq 'ok') { $healthy = $true; break }
         } catch { Start-Sleep -Seconds 1 }
     }

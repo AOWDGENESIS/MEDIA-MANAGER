@@ -52,7 +52,7 @@ try {
     for ($i = 0; $i -lt 45; $i++) {
         if ($apiProcess.HasExited) { throw "MSI-Core vorzeitig beendet: $($apiProcess.ExitCode)" }
         try {
-            $result = Invoke-RestMethod -Uri 'http://127.0.0.1:18421/health' -TimeoutSec 2
+            $result = Invoke-RestMethod -Uri 'http://127.0.0.1:18421/health' -TimeoutSec 2 -NoProxy
             if ($result.status -eq 'ok') { $healthy = $true; break }
         } catch { Start-Sleep -Seconds 1 }
     }
@@ -82,7 +82,7 @@ try {
     $startBat = Join-Path $installDir 'Start-GenesisMediaManager.bat'
     & $env:ComSpec /d /c ('"' + $startBat + '"')
     if ($LASTEXITCODE -ne 0) { throw "MSI-Startskript fehlgeschlagen: $LASTEXITCODE" }
-    $runningHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5
+    $runningHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5 -NoProxy
     if ($runningHealth.status -ne 'ok') { throw 'MSI-Core laeuft vor Deinstallation nicht' }
 
     # Per-User-MSI erscheinen je nach Windows-/Installer-Kontext nicht

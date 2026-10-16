@@ -122,11 +122,25 @@ try {
     for ($i = 0; $i -lt 45; $i++) {
         if ($apiProcess.HasExited) { throw "Core-Service vorzeitig beendet (Exit-Code $($apiProcess.ExitCode))" }
         try {
-            $result = Invoke-RestMethod -Uri 'http://127.0.0.1:18420/health' -TimeoutSec 2
+            $result = Invoke-RestMethod -Uri 'http://127.0.0.1:18420/health' -TimeoutSec 2 -NoProxy
             if ($result.status -eq 'ok') { $ready = $true; break }
         } catch { Start-Sleep -Seconds 1 }
     }
-    if (-not $ready) { throw 'Core-Service /health antwortet nicht mit status ok' }
+    if (-not $ready) {
+        foreach ($diagnostic in @($apiError, $apiOutput)) {
+            if (Test-Path $diagnostic) {
+                Get-Content $diagnostic -Tail 15 | ForEach-Object {
+                    $message = ($_.ToString() -replace '%', '%25') -replace '[\r\n]+', ' '
+                    Write-Host "::error::Core-Log: $message"
+                }
+            }
+        }
+        try {
+            $noProxyResult = Invoke-RestMethod -Uri 'http://127.0.0.1:18420/health' -TimeoutSec 3 -NoProxy
+            Write-Host "::error::Core-Diagnose ohne Proxy: $($noProxyResult.status)"
+        } catch { Write-Host "::error::Core-Diagnose: $($_.Exception.Message)" }
+        throw 'Core-Service /health antwortet nicht mit status ok'
+    }
     Write-Host 'Core-API antwortet: status ok'
 
     Stop-Process -Id $apiProcess.Id -Force -ErrorAction SilentlyContinue
@@ -162,7 +176,7 @@ try {
     Write-Host 'Starte den mitgelieferten Start-GenesisMediaManager.bat'
     & $env:ComSpec /d /c ('"' + $startBat + '"')
     if ($LASTEXITCODE -ne 0) { throw "Startskript: Exit-Code $LASTEXITCODE" }
-    $startedHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5
+    $startedHealth = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5 -NoProxy
     if ($startedHealth.status -ne 'ok') { throw 'Startskript hat den Core-Service nicht gestartet' }
     Write-Host 'Startskript: lokale Core-API antwortet mit status ok'
 
@@ -250,7 +264,7 @@ try {
     Write-Host 'Starte App/Core fuer den Deinstallations-Test erneut'
     & $env:ComSpec /d /c ('"' + $startBat + '"')
     if ($LASTEXITCODE -ne 0) { throw "Start vor Deinstallation: Exit-Code $LASTEXITCODE" }
-    $healthBeforeUninstall = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5
+    $healthBeforeUninstall = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5 -NoProxy
     if ($healthBeforeUninstall.status -ne 'ok' -or @(Get-InstalledCoreProcesses).Count -lt 1) {
         throw 'Core-Service laeuft vor dem Uninstall-Test nicht'
     }

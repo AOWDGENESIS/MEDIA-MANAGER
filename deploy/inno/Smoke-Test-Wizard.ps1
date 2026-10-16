@@ -1,16 +1,46 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    Echte Inno-Wizard-Buttons ueber Windows UI Automation betaetigen.
-    Separater CI-Test nach dem stillen Inno-Test; keine Nutzerdateien.
+    Inno-Wizard ueber seine echten Windows-Buttons installieren und deinstallieren.
+    Der Windows-CI-Runner stellt VCL-Buttons nicht immer ueber UI Automation bereit;
+    daher per Win32-Kindfenster und BM_CLICK statt blindem Tastatur-Senden.
 #>
 [CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 . (Join-Path $repoRoot 'deploy\installer\Set-OfflineTestEnvironment.ps1')
-Add-Type -AssemblyName UIAutomationTypes
-Add-Type -AssemblyName UIAutomationClient
+Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class WizardControls {
+    public class Button { public IntPtr Handle; public string Text; public string ClassName; public bool Enabled; public bool Visible; }
+    private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr param);
+    [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindowsProc callback, IntPtr param);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int length);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr hwnd, StringBuilder text, int length);
+    [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hwnd, uint message, IntPtr wparam, IntPtr lparam);
+    public static List<Button> GetButtons(IntPtr parent) {
+        var result = new List<Button>();
+        EnumChildWindows(parent, (hwnd, param) => {
+            var cls = new StringBuilder(256);
+            GetClassName(hwnd, cls, cls.Capacity);
+            if (cls.ToString().IndexOf("Button", StringComparison.OrdinalIgnoreCase) < 0) return true;
+            var text = new StringBuilder(512);
+            GetWindowText(hwnd, text, text.Capacity);
+            result.Add(new Button { Handle = hwnd, Text = text.ToString(), ClassName = cls.ToString(),
+                Enabled = IsWindowEnabled(hwnd), Visible = IsWindowVisible(hwnd) });
+            return true;
+        }, IntPtr.Zero);
+        return result;
+    }
+    public static void Click(IntPtr hwnd) { SendMessage(hwnd, 0x00F5, IntPtr.Zero, IntPtr.Zero); }
+}
+'@
 $setup = Join-Path $repoRoot 'build\GenesisMediaManager-Inno-Setup.exe'
 $installDir = Join-Path $env:LOCALAPPDATA 'Programs\GenesisMediaManager'
 $client = Join-Path $installDir 'client\GenesisMediaManager.exe'
@@ -23,81 +53,60 @@ try {
     $p = Start-Process -FilePath $setup -ArgumentList @(
         '/NORESTART', ('/LOG="' + $log + '"')
     ) -PassThru
-    $window = $null
+    $handle = [IntPtr]::Zero
     for ($i=0; $i -lt 45; $i++) {
         $p.Refresh()
         if ($p.HasExited) { throw "Setup-Wizard vorzeitig beendet: $($p.ExitCode)" }
-        # Inno Setup startet einen entpackten Kindprozess mit /SL5; die
-        # aeussere Setup-EXE hat selbst KEIN MainWindowHandle.
+        # Die aeussere Inno-EXE entpackt einen .tmp-Kindprozess, der das
+        # eigentliche Wizard-Fenster haelt. Erst diesen Prozess suchen.
         $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($p.Id)" -ErrorAction SilentlyContinue)
         $candidates = @($children | ForEach-Object {
             Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue
         }) + @($p)
         foreach ($candidate in $candidates) {
             $candidate.Refresh()
-            if (-not $candidate.HasExited -and $candidate.MainWindowHandle -ne [IntPtr]::Zero) {
-                $possibleWindow = [System.Windows.Automation.AutomationElement]::FromHandle($candidate.MainWindowHandle)
-                if (-not $possibleWindow) { continue }
-                $buttonsCondition = [System.Windows.Automation.PropertyCondition]::new(
-                    [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-                    [System.Windows.Automation.ControlType]::Button)
-                $possibleButtons = $possibleWindow.FindAll(
-                    [System.Windows.Automation.TreeScope]::Descendants, $buttonsCondition)
-                if ($possibleButtons.Count -gt 0) {
-                    $wizardProcess = $candidate
-                    $window = $possibleWindow
-                    break
-                }
+            if ($candidate.HasExited -or $candidate.MainWindowHandle -eq [IntPtr]::Zero) { continue }
+            $found = [WizardControls]::GetButtons($candidate.MainWindowHandle)
+            if ($found.Count -gt 0) {
+                $wizardProcess = $candidate
+                $handle = $candidate.MainWindowHandle
+                break
             }
         }
-        if ($window) { break }
+        if ($handle -ne [IntPtr]::Zero) { break }
         Start-Sleep -Seconds 1
     }
-    if (-not $window) {
+    if ($handle -eq [IntPtr]::Zero) {
         $diagnostics = @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $($p.Id)" -ErrorAction SilentlyContinue |
             ForEach-Object { "$($_.ProcessId):$($_.Name):$($_.CommandLine)" })
-        Write-Host "::error::Inno-Kindprozesse ohne UI: $($diagnostics -join '; ')"
+        Write-Host "::error::Inno-Kindprozesse ohne native Buttons: $($diagnostics -join '; ')"
         throw 'Inno-Setup-Fenster nicht fuer Benutzerinteraktion erreichbar'
     }
-    Write-Host "::notice::Inno-Wizard-Fenster: PID=$($wizardProcess.Id), Titel=$($window.Current.Name), Buttons=$($possibleButtons.Count)"
+    Write-Host "::notice::Inno-Wizard-Fenster gefunden: PID=$($wizardProcess.Id), HWND=$handle"
     $clicks = @()
     for ($i=0; $i -lt 150; $i++) {
         $p.Refresh()
         if ($p.HasExited) { break }
-        $condition = [System.Windows.Automation.PropertyCondition]::new(
-            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-            [System.Windows.Automation.ControlType]::Button)
-        $buttons = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+        $buttons = [WizardControls]::GetButtons($handle)
         if ($i -eq 0 -or $i -eq 10) {
             $buttonInfo = @($buttons | ForEach-Object {
-                "$($_.Current.Name) [enabled=$($_.Current.IsEnabled), offscreen=$($_.Current.IsOffscreen)]"
+                "$($_.Text) [$($_.ClassName), enabled=$($_.Enabled), visible=$($_.Visible)]"
             })
             Write-Host "::notice::Inno-Wizard-Buttons: $($buttonInfo -join '; ')"
         }
-        $target = $null
-        foreach ($button in $buttons) {
-            # CI-Runner haben ggf. keinen sichtbaren Desktop. InvokePattern
-            # funktioniert dort auch bei IsOffscreen=true.
-            if ($button.Current.IsEnabled -and
-                $button.Current.Name -match '(Weiter|Installieren|Fertigstellen|Next|Install|Finish)') {
-                $target = $button
-                break
-            }
-        }
+        $target = $buttons | Where-Object {
+            $_.Enabled -and $_.Visible -and $_.Text -match '(Weiter|Installieren|Fertigstellen|Next|Install|Finish)'
+        } | Select-Object -First 1
         if ($target) {
-            $name = $target.Current.Name
-            $pattern = [System.Windows.Automation.InvokePattern]$target.GetCurrentPattern(
-                [System.Windows.Automation.InvokePattern]::Pattern)
-            $pattern.Invoke()
+            $name = $target.Text
+            [WizardControls]::Click($target.Handle)
             $clicks += $name
             Write-Host "::notice::Inno-Wizard geklickt: $name"
-            Start-Sleep -Seconds 2
-        } else {
-            Start-Sleep -Seconds 2
         }
+        Start-Sleep -Seconds 2
     }
     $p.Refresh()
-    if (-not $p.HasExited) { throw 'GUI-Wizard hat nach 5 Minuten nicht abgeschlossen' }
+    if (-not $p.HasExited) { throw "GUI-Wizard hat nach 5 Minuten nicht abgeschlossen: $($clicks -join ' -> ')" }
     if ($p.ExitCode -ne 0) { throw "GUI-Wizard Exit-Code $($p.ExitCode)" }
     if ($clicks.Count -lt 2 -or -not (Test-Path $client) -or -not (Test-Path $uninstall)) {
         throw "Wizard-Klicks/Installation unvollstaendig: $($clicks -join ' -> ')"

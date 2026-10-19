@@ -1,4 +1,22 @@
 
+## 2026-10-19 – Erster Pfadwahl-CI-Test: Update am gewaehlten Pfad fehlgeschlagen
+
+Lauf [39242686422](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39242686422)
+zu `fcdc516` bestand Paketbau, Runtime-/Medientests und stille Inno-
+Installation samt WPF-Navigation. Im sichtbaren Inno-Wizard wurde der
+Zielpfad **mit Leerzeichen** erkannt und Weiter/Installieren/Fertigstellen
+geklickt. Erstinstallation, Dateien und Offline-Runtime am Zielpfad
+bestanden; der Negativtest gegen Umzug lieferte einen Nichtnull-Exitcode.
+Der folgende **silent Update-Versuch am gleichen Pfad endete mit Code 5**;
+der Workflow brach vor ZIP/MSI/Upload ab. Ursache bisher NICHT belegt:
+Der Erstlauf kann per `[Run]` noch App und Core gestartet haben, oder der
+Umzugs-Test hat aus anderem Grund abgebrochen. Jetzt separate Inno-Logs
+fuer beide Schritte erfassen und vor dem Update gezielt die Prozesse dieser
+Installation beenden; den Negativtest nur mit passender Logmeldung als
+bestanden werten. Bis zu einem neuen gruenen Lauf bleibt das alte
+Artefakt `12019991863` der zuletzt komplett gepruefte Download; strenges
+Release-Gate weiterhin FAIL.
+
 ## 2026-10-19 – Frei waehlbarer Inno-Pfad: Umsetzung vorbereitet (Windows-Test offen)
 
 **Ziel:** Das im Release-Gate gefundene Pfadwahl-Defizit beheben und die

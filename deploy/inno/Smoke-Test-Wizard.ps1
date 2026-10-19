@@ -143,21 +143,34 @@ try {
     # Ein Update darf den bisherigen Pfad nicht stillschweigend verlassen.
     $otherDir = Join-Path $env:LOCALAPPDATA 'Programs\Genesis Media Manager Wrong Path'
     if (Test-Path $otherDir) { throw "Negativtest braucht freien Ordner: $otherDir" }
+    $moveLog = Join-Path $env:RUNNER_TEMP 'genesis-inno-wizard-move.log'
     $move = Start-Process -FilePath $setup -ArgumentList @(
         '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',
-        ('/DIR="' + $otherDir + '"')
+        ('/DIR="' + $otherDir + '"'), ('/LOG="' + $moveLog + '"')
     ) -PassThru -Wait
     if ($move.ExitCode -eq 0 -or (Test-Path (Join-Path $otherDir 'client\GenesisMediaManager.exe')) -or
-        -not (Test-Path $client) -or -not (Test-Path $sentinel)) {
-        throw "Inno hat einen nicht autorisierten Pfadwechsel zugelassen: Code $($move.ExitCode)"
+        -not (Test-Path $client) -or -not (Test-Path $sentinel) -or
+        -not (Test-Path $moveLog) -or
+        -not (Select-String -Path $moveLog -Pattern 'vor einem Umzug deinstallieren' -Quiet)) {
+        if (Test-Path $moveLog) { Get-Content $moveLog -Tail 22 }
+        throw "Inno hat einen nicht autorisierten Pfadwechsel nicht eindeutig abgewiesen: Code $($move.ExitCode)"
     }
     Write-Host '::notice::Inno blockiert Umzug per Update ohne vorherige Deinstallation'
+    # Nach dem sichtbaren Erstlauf kann [Run] die App gestartet haben.
+    # Das folgende Update mit /VERYSILENT soll nicht an offenen DLLs haengen.
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+        (Join-Path $installDir 'installer\Stop-GenesisProcesses.ps1') -InstallDir $installDir
+    if ($LASTEXITCODE -ne 0) { throw 'Prozesse vor Update nicht beendbar' }
+    $updateLog = Join-Path $env:RUNNER_TEMP 'genesis-inno-wizard-update.log'
     $update = Start-Process -FilePath $setup -ArgumentList @(
         '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',
-        ('/DIR="' + $installDir + '"')
+        ('/DIR="' + $installDir + '"'), ('/LOG="' + $updateLog + '"')
     ) -PassThru -Wait
     if ($update.ExitCode -ne 0 -or -not (Test-Path $client) -or
         -not (Test-Path $sentinel)) {
+        if (Test-Path $updateLog) {
+            Get-Content $updateLog -Tail 22 | ForEach-Object { Write-Host "::error::Inno-Update-Log: $_" }
+        }
         throw "Update am gewaehlten Pfad fehlgeschlagen: $($update.ExitCode)"
     }
     Write-Host '::notice::Inno-Update am benutzergewaehlten Pfad bestanden'

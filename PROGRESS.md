@@ -1,4 +1,33 @@
 
+## 2026-10-19 – Downloadordner und beide inneren ZIPs vor Upload geprueft
+
+[Windows-CI-Lauf 39246989167](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39246989167)
+zu `8245d765d994dd06a65da660013a9d51e5cf9bf8` ist vollstaendig
+**success**: Build, .NET-Tests, Offline-Runtime, Medienfunktion, Inno
+(auch Wizard mit Pfad mit Leerzeichen und Update), ZIP- und MSI-
+Installation/Deinstallation, Bundle-Validierung und Upload. Der NEUE
+CI-Schritt pruefte **neun Nutzdateien gegen SHA256SUMS.txt** und las beide
+inneren ZIPs komplett mit eigenem CRC32-Abgleich pro Datei; Pflichtpfade
+fuer Client, Python, FFmpeg/FFprobe/fpcalc und Quellcode vorhanden.
+Die GitHub-Notice bestaetigt den positiven Test. Das nicht abgelaufene
+[Komplettpaket-Artefakt 12184357604](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39246989167/artifacts/12184357604)
+war laut API 1.010.008.665 Bytes gross; es wurde NICHT lokal geladen.
+`docs/RELEASE_GATE_AUDIT_2026-10-19.md` enthaelt die neue Nachpruefung.
+Workspace `/home/user` nach Test ca. 14 MiB (<80 MiB Zielwert).
+
+**Abgrenzung:** Erst `upload-artifact` erstellt das *aeussere*
+GitHub-Download-ZIP. Dessen Transport/Integritaet wurde **nicht** durch
+den Pre-Upload-Test nachgewiesen. Unveraendert offen sind echter
+Nichtadmin-Test, Lizenz-/CVE-Abnahme und visuelle Pruefung auf dem PC des
+Nutzers. Gesamt-Release-Gate nach GENESIS OMEGA v10.1 weiter `NOT_READY`,
+kein „100 % fehlerfrei“. Keine Binaerdateien lokal veraendert; nur Workflow,
+Validierungsskript und Projektstatus von dieser Arbeitsetappe.
+
+**Naechster sicherer Schritt:** Eine von CI-/Build-Runner getrennte
+Verifikation des heruntergeladenen aeusseren Artefakts in einer Umgebung
+mit genuegend Speicher planen; 100-MiB-Entwicklungs-Workspace nicht mit
+1-GB-Dateien belasten.
+
 ## 2026-10-19 – Paketinhalt/SHA-256/ZIP-CRC vor Upload: CI-Pruefung vorbereitet
 
 **Ziel:** Das im Release-Gate als NOT_RUN markierte Risiko einer

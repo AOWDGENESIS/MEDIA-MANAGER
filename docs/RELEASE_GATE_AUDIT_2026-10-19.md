@@ -85,7 +85,7 @@ Keine neue Veröffentlichung allein aus diesem Audit.
 zu Commit `ddee09da4104e40d728faa66e80a363e5eaaf7f1` ist **vollständig
 success**: .NET-Tests, Build, Offline-Runtime, funktionaler Medientest,
 stilles Inno/41 WPF-Navigations-IDs, sichtbarer Inno-Wizard, ZIP und MSI,
-Deinstallationen, Bundle-Bau und Upload. Aktuelles
+Deinstallationen, Bundle-Bau und Upload. Das damalige
 [Komplettpaket-Artefakt 12183176959](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39244040685/artifacts/12183176959)
 hatte beim Metadatenabruf 1.010.032.906 Bytes und war nicht abgelaufen.
 Es wurde **nicht** in diesen 100-MiB-Workspace heruntergeladen.
@@ -112,6 +112,36 @@ Es wurde **nicht** in diesen 100-MiB-Workspace heruntergeladen.
   Lizenz-/CVE-/Supply-Chain-Abnahme und visuelle Kontrolle auf dem Rechner
   des Nutzers. Alte Testberichte ersetzen keinen Nachweis für diesen
   Paketstand.
+
+## Nachprüfung am 19.10.2026: Bundle vor Upload validiert
+
+[Windows-CI-Lauf 39246989167](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39246989167)
+zu Commit `8245d765d994dd06a65da660013a9d51e5cf9bf8` war vollständig
+`success`, einschließlich des neuen Schritts `Komplettpaketstruktur,
+SHA-256 und ZIP-Inhalte vor Upload pruefen`. Das
+[Komplettpaket-Artefakt 12184357604](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39246989167/artifacts/12184357604)
+hatte laut GitHub-Metadaten 1.010.008.665 Bytes und war beim Abruf
+nicht abgelaufen. Das Paket wurde NICHT in den lokalen 100-MiB-Workspace
+heruntergeladen. Installer-/Core-/Medien-/UI-Smokes aus dem vorigen Lauf
+bestanden auch hier erneut.
+
+`deploy/Test-DownloadBundle.ps1` kontrolliert auf dem Windows-Runner vor
+dem Upload: genau neun Nutzdateien plus SHA256SUMS, nichtleere Dateien,
+korrekten Commit in BUILDINFO, erneuten SHA-256-Abgleich jeder Nutzdatei
+mit allen neun Manifest-Einträgen. Beide **inneren ZIP-Dateien**
+(`GenesisMediaManager-Setup.zip` und `GenesisMediaManager-Quellcode.zip`)
+wurden vollständig gestreamt und gegen Größe/CRC32 jedes Eintrags geprüft;
+Pflichtdateien wie `runtime/python/python.exe`, `ffmpeg.exe`, `ffprobe.exe`,
+`fpcalc.exe`, Client, Startskript und `.iss` wurden nachgewiesen. Die
+CI-Notice und der erfolgreiche Schritt belegen diesen spezifischen Test.
+
+**Grenze:** GitHub erzeugt die **äußere Artefakt-ZIP erst nach** dem
+Pre-Upload-Schritt. Ein unabhängiger Download/CRC-Check genau dieses
+transportierten Archivs wurde nicht durchgeführt (`NOT_RUN`). Ebenso sind
+Nichtadmin-Test, finale Lizenz-/CVE-Prüfung und visuelle Abnahme auf dem
+Ziel-PC offen. Der strenge Gesamtstatus bleibt **`NOT_READY`**. Das neue
+Artefakt ersetzt den oben genannten Download als zuletzt vollständig
+CI-getestete Paketversion, nicht als abschließend freigegebenes Release.
 
 **Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
 Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde

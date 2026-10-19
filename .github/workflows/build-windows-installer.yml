@@ -19,6 +19,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    outputs:
+      bundle_id: ${{ steps.bundle_upload.outputs['artifact-id'] }}
     steps:
       - name: Quellcode auschecken
         uses: actions/checkout@v5
@@ -131,9 +133,29 @@ jobs:
         run: ./deploy/Test-DownloadBundle.ps1 -BundleDir (Join-Path $env:RUNNER_TEMP 'GenesisMediaManager-Komplettpaket')
 
       - name: Komplettpaket als eine ZIP hochladen
+        id: bundle_upload
         uses: actions/upload-artifact@v6
         with:
           name: GenesisMediaManager-Komplettpaket-zip
           path: ${{ runner.temp }}/GenesisMediaManager-Komplettpaket/
           if-no-files-found: error
           compression-level: 0
+
+  verify-uploaded-artifact:
+    name: Veroeffentlichtes Download-ZIP unabhaengig pruefen
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Quellcode auschecken
+        uses: actions/checkout@v5
+
+      - name: Download auf separatem Windows-Runner, SHA-256 und ZIP-CRC pruefen
+        shell: pwsh
+        timeout-minutes: 20
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.build.outputs.bundle_id }}
+        run: ./deploy/Test-PublishedArtifact.ps1 -ArtifactId $env:ARTIFACT_ID

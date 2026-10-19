@@ -1,4 +1,26 @@
 
+## 2026-10-19 – Aeusseres GitHub-Artefakt: Zweit-Runner-Pruefung vorbereitet
+
+**Ziel:** Auch das erst NACH `upload-artifact` erzeugte Download-ZIP
+unabhaengig von Paketbau und Pre-Upload-Pruefung verifizieren, ohne den
+100-MiB-Entwicklungs-Workspace oder den Rechner des Nutzers mit einem
+>1-GB-Archiv zu belasten. Ein zweiter Windows-GitHub-Job soll nach dem
+Build das exakte Artefakt per Actions-API laden; `deploy/Test-PublishedArtifact.ps1`
+verlangt passendes Artefakt/Run/Commit, exakte Dateigroesse, GitHub-
+SHA-256-Digest, komplette CRC32-/Laengenpruefung der aeusseren ZIP,
+Extraktion in Runner-Temp und erneute SHA-256-/innere ZIP-Pruefung.
+`BundleZipIntegrity.cs` teilt die Streaming-CRC32-Implementierung zwischen
+Pre-Upload- und Zweit-Runner-Test. Tempdaten werden nur im eigens
+angelegten CI-Ordner wieder geloescht; keine Zugangsdaten ins Repo/Log.
+
+**Status:** Fuer diese Aenderungen Windows-CI noch **NOT_RUN**;
+`39246989167` bleibt der letzte vollstaendig gruene Lauf. Der strenge
+Release-Gate-Gesamtstatus bleibt NOT_READY wegen Nichtadmin-/Lizenz-/CVE-
+und Nutzer-PC-Tests, selbst wenn dieser Downloadtest bestanden wird.
+**Naechster Schritt:** Statische Pruefung der Jobabhaengigkeit und Skripte,
+danach Windows-CI auf dem Arbeitsbranch beobachten und offene Fehler
+gezielt beheben.
+
 ## 2026-10-19 – Downloadordner und beide inneren ZIPs vor Upload geprueft
 
 [Windows-CI-Lauf 39246989167](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39246989167)

@@ -1,4 +1,38 @@
 
+## 2026-10-19 – Frei waehlbarer Pfad mit Leerzeichen: Windows-CI gruen
+
+**Ergebnis:** [Windows-CI-Lauf 39244040685](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39244040685)
+zu `ddee09da4104e40d728faa66e80a363e5eaaf7f1` bestand den
+vollstaendigen Paketbau, Offline-/Medientests, Inno-Standardpfad mit
+WPF-Navigation (41 IDs), Inno-Wizard samt **sichtbar kontrolliertem,
+per /DIR vorgegebenem Pfad mit Leerzeichen**, ZIP-/MSI-Smokes und Upload.
+Der GUI-Test klickte Weiter, Weiter, Installieren und Fertigstellen;
+Pfadeingabe selbst war ueber `/DIR` vorbelegt, kein Tastaturtest. Die
+Inno-Update-Sperre gegen Umzug wurde im Log nachgewiesen, Update am
+gewaehlten Pfad, Launcher/Core `/health`, Deinstallation und Erhalt der
+synthetischen Benutzerdaten bestanden. Die Korrektur vom vorigen Testlauf
+war das gezielte Beenden der nach dem Wizard gestarteten App/Core-Prozesse
+vor dem stillen Update; getrennte Logs belegen die Fehlersuche. GitHub-
+Metadaten bestaetigten das nicht abgelaufene
+[Komplettpaket-Artefakt 12183176959](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39244040685/artifacts/12183176959),
+1.010.032.906 Bytes. Keine lokalen Release-Binaerdateien heruntergeladen;
+Workspace rund 14 MiB.
+
+**Gate-Neubewertung:** Pfadwahl und irrefuehrende Offline-Aussage sind
+fuer das neue Paket behoben; `docs/RELEASE_GATE_AUDIT_2026-10-19.md`
+enthaelt historische Matrix und Nachpruefung. Gesamtstatus dennoch
+`NOT_READY` fuer eine vollstaendige Freigabe nach GENESIS OMEGA v10.1:
+Nichtadmin-Test mit separatem Benutzer, unabhaengige ZIP-Integritaet,
+finale Lizenzen/CVEs und visuelle Abnahme auf Nutzer-PC sind offen.
+Kein Test buchstaeblich jedes Bedienelements. Die Laufzeit-/Installer-
+Nachweise sind fuer die genannten Faelle `PASS`, nicht allgemeine
+Fehlerfreiheit. Der erstgenannte Download ist jetzt das neueste vollstaendig
+CI-getestete Paket; fruehere Artefakte behalten ihre historischen Belege.
+
+**Nächster konkreter Schritt:** Das Release-Gate ohne Download des >1-GB-
+Pakets erweitern: Im Windows-CI vor Upload die ZIP-Struktur und interne
+SHA-256-Liste unabhaengig validieren; danach neue Windows-Pruefung abwarten.
+
 ## 2026-10-19 – Erster Pfadwahl-CI-Test: Update am gewaehlten Pfad fehlgeschlagen
 
 Lauf [39242686422](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39242686422)

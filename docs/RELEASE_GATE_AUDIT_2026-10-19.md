@@ -1,10 +1,17 @@
 # Offline-Windows-Paket: Release-Gate-Bestandsaufnahme (19.10.2026)
 
-**Status des strengen Release-Gates: FAIL – keine vollständige Freigabe.**
-Der bereits veröffentlichte Download bleibt ein *CI-getestetes Installationspaket*,
-aber der erfolgreiche CI-Lauf allein erfüllt nicht alle Kriterien des vom Nutzer
-bereitgestellten GENESIS-OMEGA-v10.1-Kontrollsystems. Diese Bestandsaufnahme
-ist weder ein neuer Installer-Test noch ein Audit aller Quellcodefunktionen.
+**Aktueller Status des strengen Release-Gates: NOT_READY – keine vollständige
+Freigabe.** Der ursprünglich unten auditierte Commit `8aa1f26` hatte wegen
+fehlender Pfadwahl und irreführender Anleitung noch `FAIL`. Die beiden
+konkreten Mängel sind im neueren Paket `ddee09d` mit Windows-CI-Nachweis
+behoben (Nachprüfung am Ende dieser Datei). Weitere verpflichtende Prüfungen
+sind weiterhin offen. Diese Bestandsaufnahme ist kein Audit aller
+Quellcodefunktionen.
+
+## Ursprünglicher Befund: Paketstand `8aa1f26` (historisch)
+
+Die folgende Matrix bewertet den **damals** verfügbaren Download. Für das
+aktuell getestete Paket und die Neubewertung siehe die Nachprüfung unten.
 
 ## Preflight und Nachweisgrenzen
 
@@ -46,8 +53,8 @@ ist weder ein neuer Installer-Test noch ein Audit aller Quellcodefunktionen.
 | Unabhängige Prüfung der **fertigen äußeren ZIP** | NOT_RUN | Kein nachgewiesener erneuter Download mit Dateiliste, vollständiger Archiv-Integritätsprüfung und unabhängigem Vergleich der Nutzdateien gegen `SHA256SUMS.txt`. Die GitHub-Artefaktgröße allein ist kein Integritätsbeweis. |
 | Visuelle Abnahme und SmartScreen/Antivirus auf Nutzer-PC | NOT_RUN | CI kann Layout, alle Klickfolgen und Sicherheitsrichtlinien auf dem individuellen Rechner nicht ersetzen; Setup-EXE ist laut Anleitung nicht signiert. |
 
-**Release-Entscheidung:** `FAIL`, weil mindestens eine verpflichtende
-Anforderung nachweislich verletzt ist (frei wählbarer Pfad; außerdem
+**Historische Release-Entscheidung für `8aa1f26`:** `FAIL`, weil mindestens
+eine verpflichtende Anforderung verletzt war (frei wählbarer Pfad; außerdem
 widersprüchliche beiliegende Anleitung). Weitere Prüfpunkte stehen auf
 `NOT_RUN`. Der frühere erfolgreiche Windows-CI-Test wird dadurch nicht
 rückwirkend falsch: Er belegt nur die dort tatsächlich getesteten Fälle.
@@ -68,6 +75,47 @@ Keine neue Veröffentlichung allein aus diesem Audit.
 - **Ergebnis:** Nachgewiesener Standard-Installationspfad und CI-Abdeckung,
   aber keine frei wählbare Inno-Zieladresse und keine vollständige Release-Abnahme.
 - **Status:** PASS für die Bestandsaufnahme; Release-Gate FAIL.
-- **Nächster Schritt:** Anpassung des Inno-Installationspfads **zusammen mit**
-  Konflikterkennung, Start, Update und Deinstallation planen und anschließend
-  auf Windows mit einem benutzergewählten Pfad samt Leerzeichen testen.
+- **Damals nächster Schritt:** Anpassung des Inno-Installationspfads **zusammen
+  mit** Konflikterkennung, Start, Update und Deinstallation planen und
+  anschließend auf Windows mit einem gewählten Pfad samt Leerzeichen testen.
+
+## Nachprüfung am 19.10.2026: Pfadwahl und Anleitung korrigiert
+
+[Windows-CI-Lauf 39244040685](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39244040685)
+zu Commit `ddee09da4104e40d728faa66e80a363e5eaaf7f1` ist **vollständig
+success**: .NET-Tests, Build, Offline-Runtime, funktionaler Medientest,
+stilles Inno/41 WPF-Navigations-IDs, sichtbarer Inno-Wizard, ZIP und MSI,
+Deinstallationen, Bundle-Bau und Upload. Aktuelles
+[Komplettpaket-Artefakt 12183176959](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39244040685/artifacts/12183176959)
+hatte beim Metadatenabruf 1.010.032.906 Bytes und war nicht abgelaufen.
+Es wurde **nicht** in diesen 100-MiB-Workspace heruntergeladen.
+
+- **PASS – Pfadwahl im Inno-Wizard:** `DisableDirPage=no` und `UsePreviousAppDir=yes`.
+  Der UI-Test startete mit per `/DIR` vorgegebenem Pfad *mit Leerzeichen*,
+  sah ihn tatsächlich im sichtbaren Verzeichnisfeld und aktivierte danach
+  nativ die Buttons Weiter, Weiter, Installieren und Fertigstellen. Er prüfte
+  die Programmdateien und Offline-Runtime **am alternativen Pfad**. Die
+  Texteingabe selbst erfolgte hier nicht per Tastatur/Maus, sondern per
+  Inno-Kommandozeile; das ist ausdrücklich kein Beweis für jeden Klick auf
+  dem Nutzer-PC.
+- **PASS – Umzug/Update, Start, Deinstallation:** Ein Installationsversuch
+  an einem anderen Ort wurde nur dann als blockiert gewertet, wenn der
+  Inno-Log die konkrete Umzugssperre bestätigte. Update am bisherigen Pfad,
+  Launcher und Core `/health` sowie Deinstallation bei laufendem Core
+  bestanden; synthetische Benutzerdaten blieben erhalten.
+- **PASS – Anleitung dieses Paketstands:** Die irreführende Aussage über
+  Python/Internet im *historischen* Audit wurde als auf frühere Artefakte
+  begrenzt klargestellt; die aktuelle `deploy/README-INSTALL.md` erläutert
+  Pfadwahl, Update und Offline-Paket. Bundle-Bau kopiert diese Texte.
+- **NOT_RUN – weitere Gate-Punkte:** Dedizierter echter Nichtadmin-Account,
+  unabhängiger Download mit Integritätsprüfung der äußeren ZIP, finale
+  Lizenz-/CVE-/Supply-Chain-Abnahme und visuelle Kontrolle auf dem Rechner
+  des Nutzers. Alte Testberichte ersetzen keinen Nachweis für diesen
+  Paketstand.
+
+**Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
+Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde
+sind für das neue Paket behoben. Der Download ist in den oben genannten
+Fällen CI-getestet und installierbar; nicht geprüfte Pflichtkriterien
+bleiben offen. Weder SmartScreen/Antivirus-Verhalten auf fremden PCs noch
+absolute Fehlerfreiheit wird behauptet.

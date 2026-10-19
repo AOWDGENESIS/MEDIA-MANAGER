@@ -1,9 +1,10 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    Inno-Wizard ueber seine echten Windows-Buttons installieren und deinstallieren.
-    Der Windows-CI-Runner stellt VCL-Buttons nicht immer ueber UI Automation bereit;
-    daher per Win32-Kindfenster und BM_CLICK statt blindem Tastatur-Senden.
+    Inno-Wizard mit vorgegebenem Zielpfad samt Leerzeichen per echte
+    Windows-Buttons bedienen, installieren, starten, updaten, deinstallieren.
+    Der Windows-CI-Runner stellt VCL-Buttons nicht immer ueber UI Automation
+    bereit; daher per Win32-Kindfenster und BM_CLICK.
 #>
 [CmdletBinding()]
 param()
@@ -38,20 +39,34 @@ public static class WizardControls {
         }, IntPtr.Zero);
         return result;
     }
+    public static bool HasText(IntPtr parent, string expected) {
+        bool found = false;
+        EnumChildWindows(parent, (hwnd, param) => {
+            var text = new StringBuilder(512);
+            GetWindowText(hwnd, text, text.Capacity);
+            if (string.Equals(text.ToString().TrimEnd('\\'), expected.TrimEnd('\\'),
+                StringComparison.OrdinalIgnoreCase) && IsWindowVisible(hwnd)) found = true;
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
     public static void Click(IntPtr hwnd) { SendMessage(hwnd, 0x00F5, IntPtr.Zero, IntPtr.Zero); }
 }
 '@
 $setup = Join-Path $repoRoot 'build\GenesisMediaManager-Inno-Setup.exe'
-$installDir = Join-Path $env:LOCALAPPDATA 'Programs\GenesisMediaManager'
+# Anders als der stille Inno-Test: echter Wizard, explizit ein Ziel mit
+# Leerzeichen ausserhalb des Standardverzeichnisses.
+$installDir = Join-Path $env:LOCALAPPDATA 'Programs\Genesis Media Manager CI'
 $client = Join-Path $installDir 'client\GenesisMediaManager.exe'
 $uninstall = Join-Path $installDir 'unins000.exe'
 $log = Join-Path $env:RUNNER_TEMP 'genesis-inno-wizard.log'
-if (Test-Path $client) { throw 'GUI-Wizard braucht eine frische Installation' }
+$sentinel = Join-Path $env:APPDATA 'GenesisMediaManager\ci-wizard-keep-data.txt'
+if (Test-Path $installDir) { throw 'GUI-Wizard braucht einen freien Installationsordner' }
 $p = $null
 $wizardProcess = $null
 try {
     $p = Start-Process -FilePath $setup -ArgumentList @(
-        '/NORESTART', ('/LOG="' + $log + '"')
+        '/NORESTART', ('/DIR="' + $installDir + '"'), ('/LOG="' + $log + '"')
     ) -PassThru
     $handle = [IntPtr]::Zero
     for ($i=0; $i -lt 45; $i++) {
@@ -84,9 +99,14 @@ try {
     }
     Write-Host "::notice::Inno-Wizard-Fenster gefunden: PID=$($wizardProcess.Id), HWND=$handle"
     $clicks = @()
+    $pathSeen = $false
     for ($i=0; $i -lt 150; $i++) {
         $p.Refresh()
         if ($p.HasExited) { break }
+        if (-not $pathSeen -and [WizardControls]::HasText($handle, $installDir)) {
+            $pathSeen = $true
+            Write-Host '::notice::Inno-Wizard zeigt den frei gewaehlten Installationspfad mit Leerzeichen'
+        }
         $buttons = [WizardControls]::GetButtons($handle)
         if ($i -eq 0 -or $i -eq 10) {
             $buttonInfo = @($buttons | ForEach-Object {
@@ -108,17 +128,54 @@ try {
     $p.Refresh()
     if (-not $p.HasExited) { throw "GUI-Wizard hat nach 5 Minuten nicht abgeschlossen: $($clicks -join ' -> ')" }
     if ($p.ExitCode -ne 0) { throw "GUI-Wizard Exit-Code $($p.ExitCode)" }
-    if ($clicks.Count -lt 2 -or -not (Test-Path $client) -or -not (Test-Path $uninstall)) {
-        throw "Wizard-Klicks/Installation unvollstaendig: $($clicks -join ' -> ')"
+    if (-not $pathSeen -or $clicks.Count -lt 3 -or -not (Test-Path $client) -or
+        -not (Test-Path $uninstall)) {
+        throw "Wizard-Pfad/Klicks/Installation unvollstaendig: Pfad=$pathSeen, $($clicks -join ' -> ')"
+    }
+    if (Test-Path (Join-Path $env:LOCALAPPDATA 'Programs\GenesisMediaManager\client\GenesisMediaManager.exe')) {
+        throw 'Wizard hat unerwartet in den Standardordner installiert'
     }
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
         (Join-Path $installDir 'installer\Test-OfflineRuntime.ps1') -InstallDir $installDir
     if ($LASTEXITCODE -ne 0) { throw 'Offline-Runtime nach Wizard-Installation fehlgeschlagen' }
+    New-Item -ItemType Directory -Force -Path (Split-Path $sentinel) | Out-Null
+    Set-Content -Path $sentinel -Value 'Wizard-Test: Daten erhalten'
+    # Ein Update darf den bisherigen Pfad nicht stillschweigend verlassen.
+    $otherDir = Join-Path $env:LOCALAPPDATA 'Programs\Genesis Media Manager Wrong Path'
+    if (Test-Path $otherDir) { throw "Negativtest braucht freien Ordner: $otherDir" }
+    $move = Start-Process -FilePath $setup -ArgumentList @(
+        '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',
+        ('/DIR="' + $otherDir + '"')
+    ) -PassThru -Wait
+    if ($move.ExitCode -eq 0 -or (Test-Path (Join-Path $otherDir 'client\GenesisMediaManager.exe')) -or
+        -not (Test-Path $client) -or -not (Test-Path $sentinel)) {
+        throw "Inno hat einen nicht autorisierten Pfadwechsel zugelassen: Code $($move.ExitCode)"
+    }
+    Write-Host '::notice::Inno blockiert Umzug per Update ohne vorherige Deinstallation'
+    $update = Start-Process -FilePath $setup -ArgumentList @(
+        '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',
+        ('/DIR="' + $installDir + '"')
+    ) -PassThru -Wait
+    if ($update.ExitCode -ne 0 -or -not (Test-Path $client) -or
+        -not (Test-Path $sentinel)) {
+        throw "Update am gewaehlten Pfad fehlgeschlagen: $($update.ExitCode)"
+    }
+    Write-Host '::notice::Inno-Update am benutzergewaehlten Pfad bestanden'
+    # Derselbe Startmenue-Pfad muss den lokalen Core auch mit Leerzeichen
+    # im Installationsort erreichen. Der Uninstaller stoppt danach Core/UI.
+    $startBat = Join-Path $installDir 'Start-GenesisMediaManager.bat'
+    & $env:ComSpec /d /c ('"' + $startBat + '"')
+    if ($LASTEXITCODE -ne 0) { throw "Wizard-Launcher fehlgeschlagen: $LASTEXITCODE" }
+    $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 5 -NoProxy
+    if ($health.status -ne 'ok') { throw 'Wizard-Launcher hat keinen Core gestartet' }
     $u = Start-Process -FilePath $uninstall -ArgumentList @(
         '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART'
     ) -PassThru -Wait
-    if ($u.ExitCode -ne 0 -or (Test-Path $client)) { throw 'Wizard-Installation nicht sauber deinstalliert' }
-    Write-Host "Wizard-Klicktest bestanden: $($clicks -join ' -> ')"
+    if ($u.ExitCode -ne 0 -or (Test-Path $client) -or (Test-Path (Join-Path $installDir 'runtime\python\python.exe')) -or
+        -not (Test-Path $sentinel)) {
+        throw 'Wizard-Installation nicht sauber deinstalliert oder Benutzerdaten geloescht'
+    }
+    Write-Host "Wizard-Pfad-/Klicktest bestanden: $installDir; $($clicks -join ' -> ')"
 } catch {
     $msg = ($_.Exception.Message -replace '%','%25') -replace '[\r\n]+',' '
     Write-Host "::error::Inno-Wizard: $msg"
@@ -132,4 +189,5 @@ try {
     Get-Process -Name GenesisMediaManager -ErrorAction SilentlyContinue |
         Where-Object { $_.Path -eq $client } |
         Stop-Process -Force -ErrorAction SilentlyContinue
+    Remove-Item $sentinel -ErrorAction SilentlyContinue
 }

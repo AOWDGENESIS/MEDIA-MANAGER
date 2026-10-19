@@ -1,4 +1,79 @@
 
+## 2026-10-19 – Frei waehlbarer Inno-Pfad: Umsetzung vorbereitet (Windows-Test offen)
+
+**Ziel:** Das im Release-Gate gefundene Pfadwahl-Defizit beheben und die
+historisch falsche Offline-Aussage in der beigelegten Anleitung klarstellen.
+**Umsetzung:** `deploy/inno/GenesisMediaManager.iss` zeigt die Verzeichniswahl;
+`PrepareToInstall` prueft den tatsaechlich gewaehlten Pfad, fremde
+Installationen im Standardordner und per Registry vorhandene Installationen.
+Ein Update an anderem Pfad wird abgewiesen. Der vorhandene Launcher und der
+Uninstaller nutzen bereits `{app}` beziehungsweise ihren eigenen Pfad.
+`deploy/inno/Smoke-Test-Wizard.ps1` soll den Pfad mit Leerzeichen im
+sichtbaren Wizard nachweisen, installieren, Update/Umzug, Launcher/Core,
+Deinstallation und Erhalt synthetischer Benutzerdaten pruefen; der CI-Step
+hat dafuer mehr Zeit. Die Endnutzeranleitung und der historische Audittext
+wurden angepasst; der Befund fuer den **alten** Download steht weiterhin in
+`docs/RELEASE_GATE_AUDIT_2026-10-19.md`.
+
+**Pruefstand:** `git diff --check`, WiX-XML-Parsing und statische
+Pfad-/Skriptpruefung bestanden. Inno-Kompilierung und Windows-CI sind fuer
+diese Aenderungen noch **NOT_RUN**; damit ist das strenge Release-Gate
+weiter `FAIL`. Keine neue Version als freigegeben kennzeichnen.
+**Naechster sicherer Schritt:** Auf genau diesem Arbeitsbranch Windows-CI
+starten und Fehlermeldungen/Regressionen gezielt korrigieren; danach den
+Release-Status neu bewerten.
+
+## 2026-10-19 – Offline-Paket: Release-Gate mit GENESIS OMEGA v10.1 abgeglichen
+
+**Ziel/Abnahme:** Das fuer die Installation auf Windows x64 bereitgestellte
+Offline-Komplettpaket (EXE/MSI/ZIP, portable Python-Runtime und Medienwerkzeuge)
+anhand tatsaechlicher CI-Belege und der neu bereitgestellten Kontrollkriterien
+bewerten; Testluecken und Freigabestatus explizit dokumentieren. Details und
+Belegmatrix: `docs/RELEASE_GATE_AUDIT_2026-10-19.md`.
+
+**Letzter bestaetigter Paketstand:** Branch `arena/b54df116-media-manager`,
+Commit `8aa1f265e4e4e979be670847f1787fca12aea6a1`, erfolgreicher
+[Windows-CI-Lauf 38836570355](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38836570355).
+Das [Komplettpaket-Artefakt 12019991863](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/38836570355/artifacts/12019991863)
+war beim Abruf nicht abgelaufen (1.009.985.271 Bytes). Die im Lauf
+bestandenen Schritte umfassen Build/.NET-Tests, Offline-Runtime,
+funktionale FFmpeg-/FFprobe-/fpcalc-Pruefung, Inno-Wizard-Buttons,
+Inno-/ZIP-/MSI-Installation und Deinstallation sowie WPF-Navigation ueber
+41 IDs. Dies ist weder ein Test aller UI-Klicks noch auf dem Nutzer-PC.
+
+**Heute ausgefuehrt:** `gh run view`/`gh api` fuer Run, Artefakt und
+Wizard-Notices, statische Pruefung des aktuellen Workflows, der
+Installer-/Bundle-Skripte und Installations-/Lizenzdokumentation. Keine
+neue Windows-Installation, kein neuer Build und kein Download des
+>1-GB-Artefakts; eine vollstaendige ZIP-Integritaetspruefung wurde
+**nicht** ausgefuehrt. Der private Originaltext des Kontrollsystems
+wurde nicht in das Git-Repository oder ein Release uebernommen; die
+separate v9.2-Masterprompt-Referenz wurde nicht gelesen. Bestehende
+Statusdatei bleibt `PROGRESS.md` (kein zweiter, konkurrierender Tracker).
+
+**Release-Gate: FAIL, nicht vollstaendig freigegeben.** In der Inno-EXE ist
+`DisableDirPage=yes` gesetzt; ein frei waehlbarer Installationspfad
+(Abschnitt 4.2 des Kontrollsystems) fehlt. Das mitgelieferte historische
+Installer-Audit enthaelt ausserdem noch einen irrefuehrenden Satz, dass
+Python auf PATH und Internet fuer die Erstinstallation erforderlich seien.
+Lizenzbericht weiterhin als ENTWURF markiert; volle Lizenz-/CVE-Pruefung,
+Nichtadmin-/Sonderpfad-Test, komplette UI-Abnahme und unabhaengige
+Integritaetspruefung des fertigen aeusseren ZIP sind offen/NOT_RUN.
+Ein erfolgreicher CI-Lauf bestaetigt die geprueften Standardfaelle,
+nicht ein vollstaendig bestandenes Release-Gate.
+
+**Dateien/Entscheidung:** Nur diese Projektstatusdatei und
+`docs/RELEASE_GATE_AUDIT_2026-10-19.md` fuer den Audit aktualisiert;
+keine Installer-Logik oder Download-Artefakte veraendert. Das bestehende
+`PROGRESS.md` erfuellt die Funktion des im Kontrollsystem `FORTSCHRITT.md`
+genannten Trackers. Workspace `/home/user`: rund 13 MiB vor und nach
+dem Audit (unter 80 MiB Zielgroesse).
+
+**Naechster sicherer Schritt:** Den frei waehlbaren Inno-Installationspfad
+zusammen mit Konfliktpruefungen, Launcher, Upgrade und Deinstallation
+konzipieren und anschliessend auf Windows mit einem Zielpfad mit
+Leerzeichen testen; danach die Release-Gate-Matrix erneut bewerten.
+
 ## 2026-10-10 (Fortsetzung 30) – Fensterstart ohne Core-Service geprueft
 
 Die rein kosmetische Sprachabfrage beim Fensterstart nutzt jetzt einen

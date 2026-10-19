@@ -10,8 +10,11 @@ Online-Dienste/Downloads benötigen nur dann Internet, wenn du sie nutzt.
 
 1. Auf GitHub unter **Artifacts** `GenesisMediaManager-Komplettpaket-zip`
    herunterladen und vollständig entpacken (gegebenenfalls anmelden).
-2. `GenesisMediaManager-Inno-Setup.exe` doppelklicken. Den Schritten des
-   Installationsassistenten folgen. Keine Administratorrechte erforderlich.
+2. `GenesisMediaManager-Inno-Setup.exe` doppelklicken. Im Assistenten den
+   vorgeschlagenen Ordner beibehalten **oder einen eigenen Installationspfad
+   waehlen** (z. B. einen Ordner mit Leerzeichen). Keine Administratorrechte
+   erforderlich. Fuer ein Update denselben Pfad verwenden; fuer einen Umzug
+   zuerst die bisherige Installation deinstallieren.
 3. Über „GENESIS Media Manager“ im Startmenü starten. Das Startskript
    startet den mitgelieferten Core auf `127.0.0.1:8420` und dann die UI.
 
@@ -31,11 +34,13 @@ stehen im Quellcode und in `GenesisMediaManager.iss`.
 - `GenesisMediaManager.iss` ist das **Bauskript**, nicht eine zweite
   Installationsdatei. `GenesisMediaManager-Quellcode.zip` ist Projektcode.
 
-Alle drei Installer nutzen denselben Zielordner unter
-`%LOCALAPPDATA%\Programs\GenesisMediaManager`. Vor dem Wechsel zwischen
-EXE, MSI und ZIP die vorhandene Installation unter **Windows-Einstellungen
-→ Apps → Installierte Apps** deinstallieren, sonst kollidieren die
-Deinstallierer. Updates innerhalb desselben Installers sind möglich.
+Alle drei Installer schlagen standardmaessig denselben Zielordner unter
+`%LOCALAPPDATA%\Programs\GenesisMediaManager` vor. Der Inno-Assistent
+kann einen anderen Ordner verwenden; der MSI-/ZIP-Standardstart nutzt den
+Standardordner. Vor dem Wechsel zwischen EXE, MSI und ZIP die vorhandene
+Installation unter **Windows-Einstellungen → Apps → Installierte Apps**
+deinstallieren, auch wenn sie an einem anderen Ort liegt. Updates innerhalb
+desselben Installers am bisherigen Pfad sind möglich.
 Die Benutzerdaten unter `%APPDATA%\GenesisMediaManager` bleiben bei der
 Deinstallation erhalten.
 

@@ -103,9 +103,9 @@ jobs:
         timeout-minutes: 25
         run: ./deploy/inno/Smoke-Test-Inno.ps1
 
-      - name: Inno-Installationsassistent wie Benutzer bedienen
+      - name: Inno-Installationsassistent mit frei gewaehltem Pfad bedienen
         shell: pwsh
-        timeout-minutes: 9
+        timeout-minutes: 15
         run: ./deploy/inno/Smoke-Test-Wizard.ps1
 
       - name: ZIP entpacken, installieren, Core pruefen und deinstallieren

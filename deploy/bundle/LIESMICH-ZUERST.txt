@@ -3,7 +3,9 @@ GENESIS MEDIA MANAGER – WINDOWS-X64-OFFLINEPAKET
 Installation auf einem Windows-PC:
   1. Dieses GitHub-Artefakt (ZIP) vollständig entpacken.
   2. GenesisMediaManager-Inno-Setup.exe doppelklicken.
-  3. Den Schritten des Assistenten folgen und die App starten.
+  3. Installationsordner beibehalten oder eigenen Pfad waehlen; danach
+     den Schritten des Assistenten folgen und die App starten.
+     Updates am selben Pfad; fuer einen Umzug zuerst deinstallieren.
 
 Python 3.11, Python-Core-Abhängigkeiten, ffmpeg, ffprobe und fpcalc sind
 im Installer enthalten. Auf dem Ziel-PC sind dafür weder Python,
@@ -19,8 +21,9 @@ Weitere Dateien (NICHT zusätzlich über die EXE installieren):
   BUILDINFO.txt                      Commit und zugehöriger CI-Lauf
   SHA256SUMS.txt                     SHA-256-Prüfsummen der Nutzdateien
 
-Die drei Installationsarten verwenden denselben Programmordner. Nur
-EINE verwenden und vor einem Wechsel die andere deinstallieren.
+Die drei Installationsarten verwenden standardmaessig denselben
+Programmordner; Inno erlaubt auch einen eigenen Pfad. Nur EINE Variante
+verwenden und vor einem Wechsel die andere deinstallieren.
 Benutzerdaten unter %APPDATA%\GenesisMediaManager bleiben erhalten.
 
 Nicht enthalten: persönliche Medien, Zugangsdaten, optionale lokale

@@ -3,8 +3,8 @@
 ; Danach: ISCC.exe deploy\inno\GenesisMediaManager.iss
 ; Die .iss ist das REZEPT; ohne build\package\client, backend usw. ist sie kein Installer.
 ;
-; Bitte nicht parallel mit dem bisherigen MSI-/PowerShell-Installer installieren:
-; gleicher Zielordner, aber verschiedene Deinstallationsmechanismen.
+; Bitte nicht parallel mit MSI-/PowerShell-Installer installieren:
+; unabhaengig vom frei waehllbaren Pfad verschiedene Deinstallierer.
 #define AppName "GENESIS Media Manager"
 #define AppVersion "0.2.0"
 #define Payload "..\..\build\package"
@@ -16,7 +16,8 @@ AppVersion={#AppVersion}
 AppPublisher=GENESIS Media Manager Projekt
 DefaultDirName={localappdata}\Programs\GenesisMediaManager
 DefaultGroupName={#AppName}
-DisableDirPage=yes
+DisableDirPage=no
+UsePreviousAppDir=yes
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64
@@ -63,20 +64,48 @@ Type: filesandordirs; Name: "{app}\.venv"
 var
   PythonReady: Boolean;
 
-function InitializeSetup(): Boolean;
+function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
-  InstallPath: string;
+  TargetPath, DefaultPath, ExistingInnoPath: String;
+  InnoKey, ScriptKey: String;
 begin
-  Result := True;
-  InstallPath := ExpandConstant('{localappdata}\Programs\GenesisMediaManager');
-  if FileExists(InstallPath + '\client\GenesisMediaManager.exe') and
-     not FileExists(InstallPath + '\unins000.exe') then
+  Result := '';
+  TargetPath := ExpandConstant('{app}');
+  DefaultPath := ExpandConstant('{localappdata}\Programs\GenesisMediaManager');
+  InnoKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{D9F1FF8F-8DD4-4C55-A656-6B3B01B79466}_is1';
+  ScriptKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\GenesisMediaManager';
+
+  { Erst NACH der Verzeichnisauswahl pruefen: InitializeSetup sieht nur
+    den DefaultDirName und wuerde fremde Dateien in einem frei gewaehlten
+    Ziel uebersehen. Auch /SILENT /DIR=... durchlaeuft diese Pruefung. }
+  if (FileExists(TargetPath + '\client\GenesisMediaManager.exe') and
+      not FileExists(TargetPath + '\unins000.exe')) or
+     FileExists(TargetPath + '\MsiOwnership.txt') then
   begin
-    MsgBox('Hier ist bereits GENESIS Media Manager mit einem anderen Installer ' +
-      '(MSI oder PowerShell) installiert. Bitte diese Version zuerst ueber ' +
-      'Windows-Einstellungen > Apps deinstallieren. Deine Mediathek-Daten bleiben erhalten.',
-      mbError, MB_OK);
-    Result := False;
+    Result := 'Im gewaehlten Ordner liegt eine Installation eines anderen ' +
+      'Installers (MSI/ZIP). Bitte diese zuerst ueber Apps deinstallieren.';
+    Exit;
+  end;
+  { MSI und start.bat verwenden den Standardordner. Das PowerShell-Skript
+    kann auch anderswo installieren; dessen Registry-Eintrag sperrt dann
+    ebenfalls jede parallele Inno-Installation. }
+  if (FileExists(DefaultPath + '\client\GenesisMediaManager.exe') and
+      not FileExists(DefaultPath + '\unins000.exe')) or
+     FileExists(DefaultPath + '\MsiOwnership.txt') or
+     RegKeyExists(HKCU, ScriptKey) then
+  begin
+    Result := 'GENESIS Media Manager ist bereits per MSI oder ZIP installiert. ' +
+      'Bitte diese Version zuerst ueber Apps deinstallieren.';
+    Exit;
+  end;
+  { Eine bestehende Inno-Installation nur an IHREM bisherigen Pfad
+    aktualisieren. Ein Umzug per Update liesse sonst Dateien zurueck. }
+  if RegQueryStringValue(HKCU, InnoKey, 'InstallLocation', ExistingInnoPath) and
+     (CompareText(AddBackslash(TargetPath), AddBackslash(ExistingInnoPath)) <> 0) then
+  begin
+    Result := 'Eine Inno-Installation liegt bereits unter ' + ExistingInnoPath +
+      '. Bitte dort aktualisieren oder sie vor einem Umzug deinstallieren.';
+    Exit;
   end;
 end;
 

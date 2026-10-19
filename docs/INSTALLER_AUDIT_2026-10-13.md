@@ -16,7 +16,7 @@ Der hier geprüfte Windows-Build ist erfolgreich: [GitHub-Actions-Lauf 387026885
 | `GenesisMediaManager-Setup-msi` | 59.597.684 Bytes |
 | `GenesisMediaManager-Setup-zip` | 132.512.752 Bytes |
 
-**Für die Installation auf dem PC (neue Läufe):** Unter „Artifacts“ nur `GenesisMediaManager-Komplettpaket-zip` herunterladen, die von GitHub gelieferte ZIP entpacken und die enthaltene `GenesisMediaManager-Inno-Setup.exe` ausführen. Die ebenfalls enthaltenen MSI- und ZIP-Pakete sind **Alternativen**, nicht zusätzlich zu installieren. Die `.iss` ist nur das Bauskript. Python 3.11+ auf PATH und Internet für die erstmalige Python-Einrichtung sind erforderlich. `BUILDINFO.txt` nennt den zugehörigen Lauf und Commit.
+**Für die Installation auf dem PC (neue Läufe):** Unter „Artifacts“ nur `GenesisMediaManager-Komplettpaket-zip` herunterladen, die von GitHub gelieferte ZIP entpacken und die enthaltene `GenesisMediaManager-Inno-Setup.exe` ausführen. Die ebenfalls enthaltenen MSI- und ZIP-Pakete sind **Alternativen**, nicht zusätzlich zu installieren. Die `.iss` ist nur das Bauskript. **Das aktuelle Offline-Paket benötigt weder Python auf PATH noch Internet für die Erstinstallation.** Nur die hier historisch geprüften älteren Einzelartefakte setzten beides voraus. `BUILDINFO.txt` nennt den zugehörigen Lauf und Commit.
 
 ## Gefunden und behoben
 
@@ -41,5 +41,5 @@ Der hier geprüfte Windows-Build ist erfolgreich: [GitHub-Actions-Lauf 387026885
 
 - **Kein visueller Abnahmetest** von Farben, Layout und Bedienung auf dem PC des Nutzers. Das erzeugte WPF-Fenster-Handle beweist nicht, dass jede Ansicht richtig aussieht.
 - Die MSI-Installation wurde im CI mit **explizit übergebenem** Python-Pfad (`GENESIS_PYTHON`) getestet. Die automatische Python-Erkennung des MSI-Dienstes auf einem fremden Ziel-PC ohne diese Property ist damit nicht nachgewiesen. Der ZIP-Test nutzte die beigelegte Installationsdatei und danach `start.bat`; der erste Doppelklick auf `start.bat` als *Installationsauslöser* wurde nicht separat getestet. Für den Nutzer bleibt die Inno-EXE der empfohlene Weg.
-- Die Inno-EXE ist **nicht digital signiert**; SmartScreen kann warnen. Python 3.11+ und eine einmalige pip-Verbindung sind weiterhin externe Voraussetzungen; eine vollständige Offline-/Sicherheits-/CVEs-Prüfung aller künftig aufgelösten Python-Versionen ist damit nicht erbracht.
+- Die Inno-EXE ist **nicht digital signiert**; SmartScreen kann warnen. Für die hier historisch geprüften alten Einzelartefakte waren Python 3.11+ und eine einmalige pip-Verbindung externe Voraussetzungen. Das spätere Offline-Paket liefert sie mit; eine vollständige Sicherheits-/CVE-Prüfung aller enthaltenen Abhängigkeiten ist durch diesen historischen Audit nicht erbracht.
 - „0 GitHub-Annotationen“ ist keine Garantie für absolute Fehlerfreiheit oder für null Warnungen in jeder Abhängigkeit. Der visuelle Test auf dem Ziel-PC und dortige Sicherheitsrichtlinien/Antivirus-Verhalten bleiben offen.

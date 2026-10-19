@@ -125,6 +125,11 @@ jobs:
         shell: pwsh
         run: ./deploy/Build-DownloadBundle.ps1
 
+      - name: Komplettpaketstruktur, SHA-256 und ZIP-Inhalte vor Upload pruefen
+        shell: pwsh
+        timeout-minutes: 12
+        run: ./deploy/Test-DownloadBundle.ps1 -BundleDir (Join-Path $env:RUNNER_TEMP 'GenesisMediaManager-Komplettpaket')
+
       - name: Komplettpaket als eine ZIP hochladen
         uses: actions/upload-artifact@v6
         with:

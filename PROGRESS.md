@@ -1,4 +1,25 @@
 
+## 2026-10-19 – Paketinhalt/SHA-256/ZIP-CRC vor Upload: CI-Pruefung vorbereitet
+
+**Ziel:** Das im Release-Gate als NOT_RUN markierte Risiko einer
+unvollstaendigen oder beschaedigten Download-Zusammenstellung ohne Download
+des >1-GB-Artefakts in den auf 100 MiB limitierten Entwicklungs-Workspace
+mindern. `deploy/Test-DownloadBundle.ps1` kontrolliert vor Upload auf dem
+Windows-Runner die exakte Nutzdateiliste, BUILDINFO-Commit, jede der neun
+SHA-256-Zeilen per erneutem Dateihash sowie beide enthaltenen ZIPs durch
+vollstaendige Streaming-Dekompression und eigenen CRC32-Abgleich je Datei.
+Pflichtpfade fuer Python, Client, FFmpeg/FFprobe/fpcalc und Quellcode
+muessen vorhanden sein. Die Workflow-Stufe verhindert bei Fehlern den
+Upload. `actions/upload-artifact` erzeugt das aeussere Download-ZIP aber
+**erst nach dieser Stufe**; dessen Transport/Integritaet bleibt durch
+Pre-Upload-Pruefung allein nicht nachgewiesen. Kein lokales GB-Artefakt.
+
+**Pruefstand:** Windows-CI der neuen Skriptfassung noch NOT_RUN. Fuer das
+fruehere, vollstaendig gruene Paket bleibt Lauf 39244040685 massgeblich.
+Naechster Schritt: Skript/Workflow statisch pruefen, dann auf dem
+festgelegten Arbeitsbranch Windows-CI ausfuehren und Resultat in
+`docs/RELEASE_GATE_AUDIT_2026-10-19.md` und hier dokumentieren.
+
 ## 2026-10-19 – Frei waehlbarer Pfad mit Leerzeichen: Windows-CI gruen
 
 **Ergebnis:** [Windows-CI-Lauf 39244040685](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39244040685)

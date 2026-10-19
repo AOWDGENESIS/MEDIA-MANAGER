@@ -1,4 +1,33 @@
 
+## 2026-10-19 – Veröffentlichtes äußeres ZIP auf zweitem Windows-Runner bestanden
+
+[Windows-CI-Lauf 39251709035](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39251709035)
+zu `536c06924e34c2619ef3184aa9ed0b1784d589e6` bestand Paketbau,
+.NET-/Offline-/Medien-/Inno-/ZIP-/MSI-/UI-Tests, Bundle-Preflight und
+Upload. Ein **separater Windows-Runner** lud anschließend das echte
+äußere GitHub-Artefakt herunter. Die GitHub-Notices und der grüne zweite
+Job (2m1s) bestätigen Byte-Länge, SHA-256 gegen den GitHub-Digest, alle
+ZIP-Einträge einschließlich CRC32/Länge sowie nach Extraktion alle neun
+Nutzdateien gegen SHA256SUMS und beide inneren ZIPs. Artifact-API:
+[Komplettpaket 12187150814](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39251709035/artifacts/12187150814),
+1.010.000.271 Bytes, nicht abgelaufen, Digest
+`sha256:a03456f262ab3b1e6091a7e023d96fc0a2d2c08f14165242dc408957b346446b`.
+Die GB-Datei lag **nur in RUNNER_TEMP** auf GitHub, nie lokal im
+Entwicklungs-Workspace; der Test entfernte seinen eigenen Tempordner.
+`docs/RELEASE_GATE_AUDIT_2026-10-19.md` wurde neu abgeglichen.
+Workspace `/home/user`: ca. 15 MiB, Arbeitsbranch exklusiv.
+
+**Gate-Status:** ZIP-Struktur, Hash-Konsistenz und Übertragung für das
+Artefakt `PASS`; vollständige Produktfreigabe unverändert `NOT_READY`.
+Der Digest bestätigt Integrität relativ zu GitHub-Metadaten, ist keine
+Code-Signatur. Dedizierter Nichtadmin-Test, finale Lizenz-/CVE-Abnahme
+und visuelle Abnahme auf dem Nutzer-PC fehlen. Keine Behauptung, jeder
+Klick oder jeder Antivirus-Status sei überprüft.
+
+**Nächster sicherer Schritt:** Die konkret im Windows-Paket ausgelieferten
+Drittkomponenten und Lizenzen/Sicherheitsmeldungen nachvollziehbar
+inventarisieren und dann die offenen Redistribution-/CVE-Punkte prüfen.
+
 ## 2026-10-19 – Aeusseres GitHub-Artefakt: Zweit-Runner-Pruefung vorbereitet
 
 **Ziel:** Auch das erst NACH `upload-artifact` erzeugte Download-ZIP

@@ -143,6 +143,35 @@ Ziel-PC offen. Der strenge Gesamtstatus bleibt **`NOT_READY`**. Das neue
 Artefakt ersetzt den oben genannten Download als zuletzt vollständig
 CI-getestete Paketversion, nicht als abschließend freigegebenes Release.
 
+## Nachprüfung am 19.10.2026: Äußere GitHub-ZIP unabhängig heruntergeladen
+
+[Windows-CI-Lauf 39251709035](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39251709035)
+zu Commit `536c06924e34c2619ef3184aa9ed0b1784d589e6` ist vollständig
+**success**, einschließlich des zweiten Jobs `Veroeffentlichtes Download-ZIP
+unabhaengig pruefen` auf einem **anderen** Windows-Runner (2m1s).
+[Artefakt 12187150814](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39251709035/artifacts/12187150814)
+war beim Abruf nicht abgelaufen, Größe **1.010.000.271 Bytes**; GitHub-API-
+Digest `sha256:a03456f262ab3b1e6091a7e023d96fc0a2d2c08f14165242dc408957b346446b`.
+
+Der zweite Job prüfte zunächst ID, Run und Commit über die Actions-API,
+lud danach die **tatsächliche äußere Artefakt-ZIP** auf seinen Runner in
+`RUNNER_TEMP`, verglich Byte-Länge und neu berechneten SHA-256 mit den
+API-Metadaten, dekomprimierte alle äußeren ZIP-Einträge mit eigenem
+CRC32-/Längenvergleich und kontrollierte die exakte Dateiliste. Nach
+Extraktion folgten der erneute Abgleich aller neun Nutzdateien gegen
+`SHA256SUMS.txt` und die vollständige CRC32-Prüfung beider inneren ZIPs.
+CI-Notices und grüne Jobs belegen diesen konkreten Ablauf. Die GB-Datei
+wurde **nie** in den limitierten lokalen Entwicklungs-Workspace geladen;
+die eigens erzeugten temporären Daten wurden auf dem zweiten Runner
+anschließend entfernt.
+
+**ZIP-Gate für diesen Artefakt-Download: PASS** für Struktur, Übertragung,
+Hash-Konsistenz und Dekomprimierbarkeit. Der GitHub-Digest/Manifestabgleich
+ist ein Integritätsnachweis gegenüber GitHub-Metadaten, **keine**
+Software-Signatur und kein Nachweis der Unbedenklichkeit des Codes.
+Weiter `NOT_RUN`: echte Installation als Nichtadmin, abschließende
+Lizenz-/CVE-/Supply-Chain-Abnahme und visuelle Nutzer-PC-Abnahme.
+
 **Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
 Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde
 sind für das neue Paket behoben. Der Download ist in den oben genannten

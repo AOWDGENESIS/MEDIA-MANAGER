@@ -1,4 +1,21 @@
 
+## 2026-10-20 – Echter Nutzer-PC: ZIP-Hash OK, Inno durch bestehende Installation blockiert
+
+Der Nutzer hat das öffentliche Komplettpaket heruntergeladen und die
+Inno-Setup-EXE gestartet. Der lokal gemessene SHA-256 des äußeren ZIPs
+`22F00E8CBDE23FE428DC0800B9944BF1819BE316214DEB248B03ADE4F772AEEF`
+stimmt (Groß-/Kleinschreibung unerheblich) mit dem veröffentlichten Digest
+überein. Ein Screenshot des echten Windows-Installationsassistenten zeigt
+**keine abgeschlossene Installation**, sondern die absichtlich vorhandene
+Sperre „bereits per MSI oder ZIP installiert“. Damit ist ein realer
+Nutzer-PC-Installationsversuch **BLOCKED**, nicht bestanden. Vor einem
+Installer-Wechsel zunächst die vorhandene Installation in Windows
+„Installierte Apps“ identifizieren und regulär deinstallieren; keine
+Dateien oder Registryschlüssel blind löschen, den Schutz nicht umgehen.
+Wenn kein entsprechender Eintrag sichtbar ist, nur lesend MSI-Marker,
+Anwendungsdatei, Inno-Uninstaller und ZIP-Registry-Eintrag prüfen und erst
+dann gezielt weiter untersuchen. Visuelle PC-Abnahme bleibt offen.
+
 ## 2026-10-20 – Oeffentlicher ZIP-Link ohne GitHub-Anmeldung nachweislich erfolgreich
 
 Nach ausdruecklicher Zustimmung des Nutzers wurde **kein vollstaendig

@@ -195,6 +195,21 @@ und SHA-256. Das ist ein Nachweis für diesen öffentlich nutzbaren Link,
 nicht für spätere Verfügbarkeit oder den PC des Nutzers. Das >1-GB-ZIP
 wurde nie im auf 100 MiB begrenzten lokalen Workspace abgelegt.
 
+## Nutzer-PC am 20.10.2026: echter Installationsversuch gestoppt
+
+Der Nutzer hat den äußeren ZIP-Hash auf seinem Windows-PC berechnet:
+`22F00E8CBDE23FE428DC0800B9944BF1819BE316214DEB248B03ADE4F772AEEF`
+(identisch mit dem veröffentlichten Digest, Groß-/Kleinschreibung
+unerheblich). Screenshot-Beleg: Paket entpackt, Setup-EXE gestartet;
+SmartScreen meldete mangels Signatur einen unbekannten Herausgeber.
+Im Inno-Wizard erschien anschließend der **vorgesehene Abbruch wegen einer
+bereits vorhandenen MSI- oder ZIP-Installation**. Der konkrete Auslöser
+(Datei/Marker/Registry) ist noch nicht identifiziert. **Dieser Versuch
+beweist KEINE erfolgreiche Installation oder visuelle Komplettabnahme
+auf dem Nutzer-PC** (`BLOCKED`). Reguläre Deinstallation der bestehenden
+Variante prüfen, nicht manuell Dateibaum/Registry löschen oder Schutz
+umgehen; bei fehlendem Apps-Eintrag nur lesende Diagnose anfordern.
+
 **Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
 Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde
 sind für das neue Paket behoben. Der Download ist in den oben genannten

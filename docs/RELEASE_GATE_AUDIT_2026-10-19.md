@@ -206,12 +206,16 @@ Im Inno-Wizard erschien anschließend die Meldung „bereits per MSI oder
 ZIP installiert“. Der Nutzer widerspricht: Es sei nichts installiert.
 Die Meldung allein beweist **KEINE Altinstallation**: Derselbe Codepfad
 prüft auch Dateireste im Ziel- oder Standardordner, einen MSI-Marker oder
-einen möglicherweise verwaisten HKCU-Uninstall-Schlüssel. Welche Bedingung
-anschlug, ist noch unbekannt. **Keine erfolgreiche Installation oder
-visuelle Komplettabnahme auf dem Nutzer-PC** (`BLOCKED`). Zuerst die
-Bedingungen und den ausgewählten Zielpfad nur lesend diagnostizieren;
-keine Deinstallation, Registry-/Dateilöschung oder Schutzumgehung ohne
-Beleg empfehlen.
+einen möglicherweise verwaisten HKCU-Uninstall-Schlüssel. Nachträgliche
+lesende Diagnose des Standardordners: Client-EXE vorhanden, Inno-Uninstaller
+fehlt, MSI-Marker fehlt, HKCU-ZIP-Uninstall-Schlüssel vorhanden. Zwei
+unabhängige Konfliktbedingungen schlagen an; ob eine nutzbare bzw. in
+Windows-Apps sichtbare ZIP-Installation existiert, ist **nicht geklärt**.
+**Keine erfolgreiche Installation oder visuelle Komplettabnahme auf dem
+Nutzer-PC** (`BLOCKED`). Bevor Dateien oder Registry verändert werden,
+lesend prüfen, ob das zum Schlüssel gehörende Uninstall-Skript existiert
+und welche InstallLocation/UninstallString eingetragen sind. Keine
+pauschale Löschung oder Schutzumgehung empfehlen.
 
 **Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
 Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde

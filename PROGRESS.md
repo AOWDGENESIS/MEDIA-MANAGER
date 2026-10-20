@@ -7,13 +7,20 @@ Inno-Setup-EXE gestartet. Der lokal gemessene SHA-256 des äußeren ZIPs
 stimmt (Groß-/Kleinschreibung unerheblich) mit dem veröffentlichten Digest
 überein. Der Screenshot zeigt den Abbruch mit der Behauptung „bereits per
 MSI oder ZIP installiert“. Der Nutzer widerspricht ausdrücklich: Auf
-seinem PC sei nichts installiert. Die Setup-Meldung fasst mehrere
-verschiedene Checks zusammen, darunter bloße Datei-/Registry-Reste;
-**eine bestehende Installation ist NICHT nachgewiesen**. Der genaue
-Auslöser einschließlich eines gegebenenfalls gewählten anderen Zielpfads
-ist noch unbekannt. Installation auf dem Nutzer-PC daher `BLOCKED`,
-visuelle Abnahme nicht bestanden. Keine Deinstallation, manuelle Löschung
-oder Umgehung des Schutzes ohne lesende Diagnose der Einzelbedingungen.
+seinem PC sei nichts installiert. Lesende Diagnose des **Standardordners**
+unter `%LOCALAPPDATA%\Programs\GenesisMediaManager`: `Programmdatei=True`,
+`Inno_Deinstaller=False`, `MSI_Marker=False`, `ZIP_Registry=True`. Somit
+lösen **zwei getrennte Inno-Bedingungen** die Sperre aus: eine Client-EXE
+ohne Inno-Uninstaller und ein HKCU-ZIP-Uninstall-Schlüssel. Die Meldung
+beweist weiterhin keine funktionsfähige oder in Windows-Apps sichtbare
+Altinstallation (möglicherweise Reste/abgebrochene ZIP-Installation).
+Installation auf dem Nutzer-PC `BLOCKED`, visuelle Abnahme nicht bestanden.
+Vor einer Handlung nur lesend `DisplayName`, `InstallLocation`,
+`UninstallString` des Schlüssels und Existenz des projektspezifischen
+`Uninstall-GenesisMediaManager.ps1` prüfen. Keine manuelle Löschung oder
+Umgehung des Schutzes ohne Bestätigung/Begutachtung; der ZIP-Uninstaller
+entfernt den **gesamten Programmordner**, nicht die Benutzerdaten unter
+`%APPDATA%\GenesisMediaManager`.
 
 ## 2026-10-20 – Oeffentlicher ZIP-Link ohne GitHub-Anmeldung nachweislich erfolgreich
 

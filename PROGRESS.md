@@ -23,9 +23,28 @@ Nutzer-PC-Ursache ausgeben.** Gegenmaßnahmen in Arbeit: gemeinsame
 fensterlose CLI-Startoptionen für FFprobe/FFmpeg/fpcalc, nur noch ein
 PowerShell-Prozess pro Health-Check-Wartephase, atomar abbrechende
 Scan-Datei-/Hash-/Zeitbudgets, API-Sperre paralleler Scans, Tests.
-Diese Änderungen sind noch nicht auf dem Nutzer-PC getestet; keine
-Freigabe oder Neuveröffentlichung ohne belegte Windows-Prüfung und
-gesonderte Nutzer-PC-Abnahme. Lokal keine GB-Dateien speichern.
+Gegenmaßnahmen auf Arbeitsbranch `8aa1c92db851270a66ce2f1f99acfe46d55002c3`
+umgesetzt: alle sieben produktiven FFprobe/FFmpeg/fpcalc-Subprozesse nutzen
+unter Windows `CREATE_NO_WINDOW`; die BAT nutzt maximal einen
+PowerShell-Prozess je Health-Check-Phase statt bis zu 61 Einzelstarts;
+`/scan` sperrt parallele Anfragen und bricht atomar bei mehr als 200
+Mediendateien, 512 MiB neu zu hashenden Daten oder >120 Sekunden zwischen
+Dateien ab. Der Schutz ist bewusst eine **funktionale Einschränkung**;
+für große Bibliotheken fehlt noch eine abbrechbare/progressive Lösung.
+Lokale sichere Tests: 16 bestanden, 4 mangels ffmpeg übersprungen,
+2 ffmpeg-abhängige Tests nicht ausführbar; keine Nutzermedien gelesen.
+
+[Windows-CI-Lauf 39398750151](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39398750151)
+**success** inkl. paketierter Windows-CREATE_NO_WINDOW-Prüfung,
+Launcher-Check, Installations-/UI-/Offline-Runtime-Smokes, Bundle-Hashes
+und unabhängiger Zweit-Runner-Prüfung. Neues CI-Artefakt `12253853331`,
+1.010.074.974 Bytes, Digest
+`sha256:dc8e1cc3a60adf481982f4ee23c935415d969f3e5c24346c1186438850aa6be0`.
+**Kein neues öffentliches Release** und **keine reale Scan-Reproduktion**
+auf dem Nutzer-PC: diese grüne CI belegt noch nicht, dass sein Rechner
+beim Scan wieder stabil bleibt. Release bleibt `draft=true`/anonym 404,
+Gate weiterhin `FAIL / DO_NOT_USE_SCAN`. Erst Ursache/Logs, gezielter
+Windows-Scan-Test und Nutzer-PC-Abnahme klären. Lokal keine GB-Dateien.
 
 ## 2026-10-20 – Pflicht: GENESIS muss unter Windows „Installierte Apps“ erscheinen
 

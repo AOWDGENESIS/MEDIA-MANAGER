@@ -261,9 +261,16 @@ zurückgezogen** (`draft=true`; anonymer Download nun HTTP 404), um
 weitere Installationen des betroffenen Scans zu verhindern. Bereits
 heruntergeladene Dateien lassen sich dadurch nicht zurückrufen. Nutzer
 angewiesen, App/Scan nicht erneut zu öffnen und keine Mediendaten zu
-löschen. Hypothesen und Gegenmaßnahmen stehen in `PROGRESS.md`;
-für einen neuen Build gelten Tests, unabhängige Windows-Prüfung und
-visuelle Nutzer-PC-Abnahme weiterhin als offen.
+löschen. Hypothesen und Gegenmaßnahmen stehen in `PROGRESS.md`.
+[CI-Lauf 39398750151](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39398750151)
+für den eingeschränkten Schutzbuild `8aa1c92` bestand Windows-Build,
+paketierte `CREATE_NO_WINDOW`-Option, Launcher-Prüfung, Installer-Smokes
+und unabhängigen Download/CRC; Artefakt `12253853331`, SHA-256
+`dc8e1cc3a60adf481982f4ee23c935415d969f3e5c24346c1186438850aa6be0`.
+Das ist **keine** Reproduktion des problematischen Scans auf dem Ziel-PC,
+kein Beweis der Abwesenheit von flackernden Fenstern in jeder Umgebung,
+keine neue öffentliche Auslieferung. Eine echte Windows-Scanprobe und die
+visuelle Nutzer-PC-Abnahme sind weiterhin offen.
 
 **Aktuelle Release-Entscheidung: `FAIL / DO_NOT_USE_SCAN`,
 `NOT_READY` für jegliche Produktfreigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde

@@ -91,6 +91,9 @@ try {
         if (-not (Test-Path $path)) { throw "Fehlende Installationsdatei: $path" }
     }
 
+    & (Join-Path $PSScriptRoot '..\installer\Test-InstalledAppsEntry.ps1') `
+        -Installer Inno -InstallDir $installDir
+
     # Negativer Konflikttest: Ein MSI im selben Zielordner muss die
     # bestehende Inno-Installation ablehnen, BEVOR es Dateien veraendert.
     $msi = Join-Path $repoRoot 'build\package\GenesisMediaManager-Setup.msi'
@@ -281,6 +284,8 @@ try {
     if (Test-Path (Join-Path $installDir 'client\GenesisMediaManager.exe')) { throw 'Uninstaller hat den Client nicht entfernt' }
     if (@(Get-InstalledCoreProcesses).Count -gt 0) { throw 'Uninstaller hat einen laufenden Core-Prozess hinterlassen' }
     if (-not (Test-Path $sentinel)) { throw 'Uninstaller hat Benutzerdaten geloescht' }
+    & (Join-Path $PSScriptRoot '..\installer\Test-InstalledAppsEntry.ps1') `
+        -Installer Inno -InstallDir $installDir -Absent
     Write-Host 'Smoke-Test erfolgreich: Installation, Startskript, Core-API, Update, Deinstallation, Benutzerdaten erhalten.'
 } catch {
     Write-Host "::error::$($_.Exception.Message)"

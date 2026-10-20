@@ -44,6 +44,19 @@ desselben Installers am bisherigen Pfad sind möglich.
 Die Benutzerdaten unter `%APPDATA%\GenesisMediaManager` bleiben bei der
 Deinstallation erhalten.
 
+**Windows „Installierte Apps“ ist Pflicht:** Die Inno-EXE registriert bei
+erfolgreicher Installation einen Deinstallations-Eintrag unter HKCU (aktueller
+Benutzer) mit Name, Version, Zielordner und `unins000.exe`. Der ZIP-Installer
+registriert seinen eigenen HKCU-Eintrag mit
+`Uninstall-GenesisMediaManager.ps1`. Windows-CI kontrolliert nach Installation
+und Deinstallation die Registry-Einträge und die Deinstaller; **die visuelle
+Anzeige in den Windows-Einstellungen auf deinem PC ist damit noch nicht
+bewiesen**. Bitte nach erfolgreichem Setup in „Einstellungen → Apps →
+Installierte Apps“ nach **GENESIS Media Manager** suchen und die Anzeige samt
+Deinstallieren-Option überprüfen. Falls sie fehlt, nicht blind Ordner oder
+Registry-Einträge löschen: den vollständigen Uninstall-Eintrag und mögliche
+Versteck-Flags (`SystemComponent`, `NoRemove`, `ParentKeyName`) prüfen lassen.
+
 ## Was ist nicht enthalten?
 
 Persönliche Mediendateien und Zugangsdaten werden nie mitgeliefert.

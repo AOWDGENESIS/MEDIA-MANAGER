@@ -27,6 +27,11 @@ WizardStyle=modern
 Compression=lzma2
 SolidCompression=yes
 CloseApplications=yes
+; Pro-Benutzer unter HKCU\...\Uninstall registrieren, damit Windows
+; 'Installierte Apps' und der Deinstallierer einen eigenen Eintrag haben.
+Uninstallable=yes
+CreateUninstallRegKey=yes
+UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\client\GenesisMediaManager.exe
 OutputDir=..\..\build
 OutputBaseFilename=GenesisMediaManager-Inno-Setup
@@ -82,8 +87,9 @@ begin
       not FileExists(TargetPath + '\unins000.exe')) or
      FileExists(TargetPath + '\MsiOwnership.txt') then
   begin
-    Result := 'Im gewaehlten Ordner liegt eine Installation eines anderen ' +
-      'Installers (MSI/ZIP). Bitte diese zuerst ueber Apps deinstallieren.';
+    Result := 'Im gewaehlten Ordner liegen GENESIS-Dateien ohne Inno-' +
+      'Deinstaller oder ein MSI-Marker. Das koennen auch Reste sein. ' +
+      'Bitte Ursache pruefen; keine Dateien blind loeschen.';
     Exit;
   end;
   { MSI und start.bat verwenden den Standardordner. Das PowerShell-Skript
@@ -94,8 +100,10 @@ begin
      FileExists(DefaultPath + '\MsiOwnership.txt') or
      RegKeyExists(HKCU, ScriptKey) then
   begin
-    Result := 'GENESIS Media Manager ist bereits per MSI oder ZIP installiert. ' +
-      'Bitte diese Version zuerst ueber Apps deinstallieren.';
+    Result := 'Im Standardordner liegen GENESIS-Dateien ohne Inno-' +
+      'Deinstaller, ein MSI-Marker oder ein ZIP-Deinstallationsschluessel. ' +
+      'Das beweist keine aktive Installation. Bitte Ursache pruefen; ' +
+      'keine Dateien blind loeschen.';
     Exit;
   end;
   { Eine bestehende Inno-Installation nur an IHREM bisherigen Pfad

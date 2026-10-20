@@ -30,6 +30,13 @@ try {
                        (Join-Path $extractDir 'client\GenesisMediaManager.exe'))) {
         if (-not (Test-Path $file)) { throw "ZIP-Inhalt unvollstaendig: $file" }
     }
+    # Ein verwaister, versteckter HKCU-Eintrag darf auch nach einem
+    # erneuten ZIP-Setup nicht unsichtbar in 'Installierte Apps' bleiben.
+    $zipKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\GenesisMediaManager'
+    if (Test-Path $zipKey) { throw "ZIP-Test braucht einen freien Uninstall-Eintrag: $zipKey" }
+    New-Item -Path $zipKey -Force | Out-Null
+    Set-ItemProperty -Path $zipKey -Name SystemComponent -Value 1 -Type DWord
+    Set-ItemProperty -Path $zipKey -Name ParentKeyName -Value 'old-hidden-entry'
     Write-Host 'Installiere entpacktes ZIP via beigelegtem Installer'
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer
     if ($LASTEXITCODE -ne 0) { throw "ZIP-Installation fehlgeschlagen: $LASTEXITCODE" }
@@ -37,6 +44,8 @@ try {
                         (Join-Path $installDir 'backend\run_api.py'))) {
         if (-not (Test-Path $file)) { throw "ZIP-Installation unvollstaendig: $file" }
     }
+    & (Join-Path $PSScriptRoot 'Test-InstalledAppsEntry.ps1') `
+        -Installer ZIP -InstallDir $installDir
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
         (Join-Path $extractDir 'installer\Test-OfflineRuntime.ps1') -InstallDir $installDir
     if ($LASTEXITCODE -ne 0) { throw 'ZIP-Offline-Runtime nicht lauffaehig' }
@@ -68,6 +77,8 @@ try {
     }
     if (-not $removed) { throw 'ZIP-Deinstallation hat Client, Python oder Uninstaller hinterlassen' }
     if (-not (Test-Path $sentinel)) { throw 'ZIP-Deinstallation hat Benutzerdaten geloescht' }
+    & (Join-Path $PSScriptRoot 'Test-InstalledAppsEntry.ps1') `
+        -Installer ZIP -InstallDir $installDir -Absent
     Write-Host 'ZIP-Smoke-Test erfolgreich: Entpacken, Installation, Start/Core, Deinstallation, Benutzerdaten erhalten.'
 } catch {
     Write-Host "::error::$($_.Exception.Message)"

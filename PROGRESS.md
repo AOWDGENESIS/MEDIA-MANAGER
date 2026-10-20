@@ -1,4 +1,28 @@
 
+## 2026-10-20 – Pflicht: GENESIS muss unter Windows „Installierte Apps“ erscheinen
+
+Nutzerkorrektur: Ein vorhandener HKCU-Uninstall-Schlüssel allein genügt
+**nicht** als Nachweis der tatsächlichen Sichtbarkeit unter „Installierte
+Apps“. Seine frühere ZIP-Registrierung besitzt DisplayName/InstallLocation
+und den Deinstaller, war laut Nutzer aber in den Windows-Einstellungen
+nicht sichtbar; der Grund ist noch nicht bekannt. Die aktuelle Inno-EXE
+hat wegen des alten Ordners/Schlüssels noch **keine** Installation
+abgeschlossen, sodass ihre Anzeige auf diesem PC ebenfalls nicht
+nachgewiesen ist. Dies ist ein offenes Nutzer-PC-Gate.
+
+Quellcode nachgebessert: Inno verlangt explizit den HKCU-Uninstall-Eintrag
+und benennt mögliche Reste statt eine vorhandene Installation zu
+behaupten. Der ZIP-Installer setzt Versteck-Flags beim Wiederverwenden
+eines verwaisten Registry-Eintrags zurück. Neue Windows-CI-Checks sollen
+für Inno (Standardpfad und Wizard-Pfad) und ZIP DisplayName, Version,
+InstallLocation, UninstallString, Uninstaller, fehlende Versteck-Flags
+sowie Entfernen des Eintrags bei Deinstallation prüfen. Der ZIP-Test
+simuliert einen vorherigen versteckten Uninstall-Eintrag. **CI noch nicht
+gelaufen**; ein Registry-Test ersetzt keinen visuellen Windows-Settings-
+Test auf dem Nutzer-PC. Kein altes Release-ZIP als bereits korrigiert
+bezeichnen. Naechster Schritt: Windows-CI testen, Ergebnis abwarten,
+danach Nutzer beim sichtbaren Apps-Eintrag gezielt verifizieren lassen.
+
 ## 2026-10-20 – Nutzer-PC: ZIP-Hash OK, Inno-Sperre ohne bestätigte Altinstallation
 
 Der Nutzer hat das öffentliche Komplettpaket heruntergeladen und die

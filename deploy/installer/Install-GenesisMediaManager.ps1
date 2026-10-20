@@ -213,7 +213,13 @@ Set-ItemProperty -Path $uninstallKey -Name "UninstallString" `
     -Value "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$InstallDir\Uninstall-GenesisMediaManager.ps1`""
 Set-ItemProperty -Path $uninstallKey -Name "NoModify" -Value 1 -Type DWord
 Set-ItemProperty -Path $uninstallKey -Name "NoRepair" -Value 1 -Type DWord
-Write-Ok "Erscheint ab jetzt unter Einstellungen -> Apps -> Installierte Apps"
+# New-Item -Force kann einen alten, unvollstaendigen Eintrag weiterbenutzen.
+# Versteck-Flags duerfen eine erfolgreiche (erneute) Registrierung nicht
+# aus den Windows-Einstellungen ausblenden.
+Set-ItemProperty -Path $uninstallKey -Name 'SystemComponent' -Value 0 -Type DWord
+Set-ItemProperty -Path $uninstallKey -Name 'NoRemove' -Value 0 -Type DWord
+Remove-ItemProperty -Path $uninstallKey -Name 'ParentKeyName' -ErrorAction SilentlyContinue
+Write-Ok "Unter HKCU fuer Einstellungen -> Apps -> Installierte Apps registriert"
 
 Write-Host ""
 Write-Host "=== Installation abgeschlossen ===" -ForegroundColor Green

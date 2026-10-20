@@ -135,6 +135,8 @@ try {
     if (Test-Path (Join-Path $env:LOCALAPPDATA 'Programs\GenesisMediaManager\client\GenesisMediaManager.exe')) {
         throw 'Wizard hat unerwartet in den Standardordner installiert'
     }
+    & (Join-Path $PSScriptRoot '..\installer\Test-InstalledAppsEntry.ps1') `
+        -Installer Inno -InstallDir $installDir
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
         (Join-Path $installDir 'installer\Test-OfflineRuntime.ps1') -InstallDir $installDir
     if ($LASTEXITCODE -ne 0) { throw 'Offline-Runtime nach Wizard-Installation fehlgeschlagen' }
@@ -188,6 +190,8 @@ try {
         -not (Test-Path $sentinel)) {
         throw 'Wizard-Installation nicht sauber deinstalliert oder Benutzerdaten geloescht'
     }
+    & (Join-Path $PSScriptRoot '..\installer\Test-InstalledAppsEntry.ps1') `
+        -Installer Inno -InstallDir $installDir -Absent
     Write-Host "Wizard-Pfad-/Klicktest bestanden: $installDir; $($clicks -join ' -> ')"
 } catch {
     $msg = ($_.Exception.Message -replace '%','%25') -replace '[\r\n]+',' '

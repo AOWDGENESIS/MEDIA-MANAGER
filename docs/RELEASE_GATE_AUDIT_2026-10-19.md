@@ -242,9 +242,12 @@ Aktuelles CI-Artefakt `12247397846`, Digest
 weiterhin das ältere, bereits heruntergeladene Paket; die neue CI-Version
 wurde nicht stillschweigend unter demselben Tag ausgetauscht. Die grüne
 Registry-Prüfung belegt nur Registrierungsdaten, nicht die sichtbare
-Windows-Settings-Liste auf dem individuellen PC. **Visuelles Apps-Gate:
-noch `NOT_RUN`**, bis ein Nutzer-Screenshot nach abgeschlossener
-Installation es bestätigt.
+Windows-Settings-Liste auf dem individuellen PC. Nach regulärem
+ZIP-Uninstaller bestätigte der Nutzer am PC `False` sowohl für den
+Programmordner als auch für den ZIP-Registry-Eintrag; die alte Sperre ist
+damit beseitigt. **Visuelles Apps-Gate: noch `NOT_RUN`**, bis die Inno-
+Installation anschließend abgeschlossen und „Installierte Apps“ samt
+Deinstallationsfunktion auf dem Ziel-PC tatsächlich gezeigt wird.
 
 **Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
 Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde

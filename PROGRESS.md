@@ -47,13 +47,18 @@ lösen **zwei getrennte Inno-Bedingungen** die Sperre aus: eine Client-EXE
 ohne Inno-Uninstaller und ein HKCU-ZIP-Uninstall-Schlüssel. Die Meldung
 beweist weiterhin keine funktionsfähige oder in Windows-Apps sichtbare
 Altinstallation (möglicherweise Reste/abgebrochene ZIP-Installation).
-Installation auf dem Nutzer-PC `BLOCKED`, visuelle Abnahme nicht bestanden.
-Vor einer Handlung nur lesend `DisplayName`, `InstallLocation`,
-`UninstallString` des Schlüssels und Existenz des projektspezifischen
-`Uninstall-GenesisMediaManager.ps1` prüfen. Keine manuelle Löschung oder
-Umgehung des Schutzes ohne Bestätigung/Begutachtung; der ZIP-Uninstaller
-entfernt den **gesamten Programmordner**, nicht die Benutzerdaten unter
-`%APPDATA%\GenesisMediaManager`.
+Danach bestätigte der Nutzer mit lesenden PowerShell-Checks, dass
+`DisplayName=GENESIS Media Manager`, `InstallLocation` auf den Standardordner
+zeigt und das projektspezifische `Uninstall-GenesisMediaManager.ps1`
+vorhanden ist. Nach der regulären ZIP-Deinstallation meldete er für
+`Test-Path` sowohl den Programmordner als auch den ZIP-Registry-Eintrag
+**False**; die anschließende erneute Registry-Abfrage bestätigt den
+entfernten ZIP-Eintrag. Der konkrete alte ZIP-Konflikt ist damit auf
+seinem PC **beseitigt**, nicht durch blindes Löschen umgangen. Der
+Inno-Installationsversuch und die tatsächliche Sichtbarkeit unter
+Windows „Installierte Apps“ sind **noch nicht erneut getestet**; der
+Nutzer soll die Setup-EXE aus dem bereits heruntergeladenen geprüften
+Paket erneut starten und nach Abschluss den Apps-Eintrag visuell prüfen.
 
 ## 2026-10-20 – Oeffentlicher ZIP-Link ohne GitHub-Anmeldung nachweislich erfolgreich
 

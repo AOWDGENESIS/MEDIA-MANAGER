@@ -19,6 +19,7 @@ import subprocess
 from pathlib import Path
 
 from genesis_core.logutil import get_logger
+from genesis_core.processes import media_cli_options
 
 log = get_logger("Fingerprint")
 
@@ -67,6 +68,7 @@ def compute_fingerprint(
             text=True,
             timeout=timeout_seconds,
             check=False,
+            **media_cli_options(),
         )
     except subprocess.TimeoutExpired as exc:
         raise FingerprintError(

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from genesis_core.logutil import get_logger
+from genesis_core.processes import media_cli_options
 
 log = get_logger("FFprobe")
 
@@ -46,7 +47,8 @@ def probe_file(path: str | Path, timeout_seconds: float = 30.0) -> dict[str, Any
     ]
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout_seconds, check=True
+            cmd, capture_output=True, text=True, timeout=timeout_seconds, check=True,
+            **media_cli_options(),
         )
         return json.loads(result.stdout)
     except subprocess.CalledProcessError as exc:

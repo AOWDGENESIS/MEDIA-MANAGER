@@ -10,6 +10,7 @@ from __future__ import annotations
 import dataclasses
 import datetime as dt_module
 from pathlib import Path
+from threading import Lock
 from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
@@ -647,6 +648,7 @@ def _deep_merge_dict(base: dict[str, Any], updates: dict[str, Any]) -> dict[str,
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.load()
     state = AppState(settings)
+    scan_lock = Lock()  # keine parallelen Vollscans im FastAPI-Threadpool
 
     app = FastAPI(
         title="GENESIS Media Manager - Core API",
@@ -810,24 +812,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def trigger_scan(req: ScanRequest, state: AppState = Depends(get_state)) -> dict:
         """Startet einen (fuer Phase 1 synchronen) Scan. Read-only, veraendert
         nie eine Mediendatei (Prinzip #4/#5, §6 letzter Satz)."""
-        job_id = state.jobs.create_job("scan", params=req.model_dump())
-        state.jobs.start(job_id)
+        if not scan_lock.acquire(blocking=False):
+            raise HTTPException(status_code=409, detail='Ein Scan laeuft bereits. Bitte warten.')
         try:
-            result = scan_directories(
-                state.db,
-                [Path(d) for d in req.directories],
-                compute_hash=req.compute_hash,
-                run_ffprobe=req.run_ffprobe,
-            )
-        except Exception as exc:
-            state.jobs.fail(job_id, str(exc))
-            raise HTTPException(status_code=500, detail=f"Scan fehlgeschlagen: {exc}") from exc
+            job_id = state.jobs.create_job("scan", params=req.model_dump())
+            state.jobs.start(job_id)
+            try:
+                result = scan_directories(
+                    state.db,
+                    [Path(d) for d in req.directories],
+                    compute_hash=req.compute_hash,
+                    run_ffprobe=req.run_ffprobe,
+                )
+            except Exception as exc:
+                state.jobs.fail(job_id, str(exc))
+                raise HTTPException(status_code=500, detail=f"Scan fehlgeschlagen: {exc}") from exc
 
-        state.jobs.report_progress(
-            job_id, processed_items=result.files_found, error_delta=len(result.errors)
-        )
-        state.jobs.complete(job_id)
-        return {"job_id": job_id, "result": dataclass_to_dict(result)}
+            state.jobs.report_progress(
+                job_id, processed_items=result.files_found, error_delta=len(result.errors)
+            )
+            state.jobs.complete(job_id)
+            return {"job_id": job_id, "result": dataclass_to_dict(result)}
+        finally:
+            scan_lock.release()
 
     @app.get("/media", dependencies=[require_token])
     def list_media(

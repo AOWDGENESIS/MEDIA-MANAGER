@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from genesis_core.logutil import get_logger
+from genesis_core.processes import media_cli_options
 
 log = get_logger("LoudnessFFmpeg")
 
@@ -92,6 +93,7 @@ def measure(path: str | Path, timeout_seconds: float = 120.0) -> dict[str, float
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout_seconds, check=False,
+            **media_cli_options(),
         )
     except subprocess.TimeoutExpired as exc:
         raise FFmpegLoudnormError(f"ffmpeg-Timeout bei der Loudness-Messung von {path}") from exc
@@ -148,6 +150,7 @@ def render_normalized(
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout_seconds, check=False,
+            **media_cli_options(),
         )
     except subprocess.TimeoutExpired as exc:
         raise FFmpegLoudnormError(f"ffmpeg-Timeout bei der Normalisierung von {path}") from exc

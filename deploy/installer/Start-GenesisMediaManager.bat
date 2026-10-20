@@ -23,7 +23,7 @@ REM Bei jedem erneuten Doppelklick KEINEN zweiten Core-Service starten:
 REM dieser wuerde am schon belegten Port 8420 scheitern und das Log des
 REM funktionierenden ersten Prozesses mit einer Fehlermeldung ueberschreiben.
 REM /health muss wirklich GENESIS mit status=ok melden (nicht irgendein 200).
-powershell -NoProfile -Command "try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 1; if ($s.status -eq 'ok') { exit 0 } } catch {}; exit 1" >nul 2>&1
+call :wait_for_core 1
 if not errorlevel 1 (
     echo [GENESIS] Core-Service laeuft bereits - vorhandenen Prozess verwenden.
     set "READY=1"
@@ -42,14 +42,8 @@ REM weil Windows Defender jede frisch installierte .venv-Datei/DLL beim
 REM ersten Zugriff einzeln prueft, bevor Python sqlalchemy/fastapi/
 REM onnxruntime/... ueberhaupt fertig importieren kann.
 set "READY=0"
-for /L %%i in (1,1,60) do (
-    powershell -NoProfile -Command "try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 1; if ($s.status -eq 'ok') { exit 0 } } catch {}; exit 1" >nul 2>&1
-    if !errorlevel! equ 0 (
-        set "READY=1"
-        goto :ready
-    )
-    timeout /t 1 /nobreak >nul
-)
+call :wait_for_core 60
+if not errorlevel 1 set "READY=1"
 :ready
 if "!READY!"=="0" (
     echo [GENESIS] WARNUNG: Core-Service antwortet nach 60 Sekunden immer noch nicht.
@@ -59,3 +53,10 @@ if "!READY!"=="0" (
 
 start "" "%INSTALLDIR%client\GenesisMediaManager.exe"
 endlocal
+exit /b 0
+
+:wait_for_core
+REM Ein PowerShell-Prozess pro Wartephase (1 oder 60 Versuche), NICHT
+REM pro Sekunde ein neues Fenster/Prozess. Der Probe-Aufruf ist lokal.
+powershell -NoProfile -NonInteractive -Command "$max=%~1; for($i=0; $i -lt $max; $i++){ try { $s=Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 1; if($s.status -eq 'ok'){exit 0} } catch {}; if($i -lt ($max-1)){Start-Sleep -Seconds 1} }; exit 1" >nul 2>&1
+exit /b %errorlevel%

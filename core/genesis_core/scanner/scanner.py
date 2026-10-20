@@ -46,6 +46,7 @@ from __future__ import annotations
 import dataclasses
 import datetime as dt
 import os
+import time
 from pathlib import Path
 
 from sqlalchemy import select
@@ -58,6 +59,16 @@ from genesis_core.scanner.ffprobe_util import extract_technical_summary, probe_f
 from genesis_core.scanner.hashing import sha256_of_file
 
 log = get_logger("MediaScanner")
+
+# Notbremse fuer die aktuelle Vorabversion: kein unbeschraenkter, synchroner
+# Vollplatten-Scan ohne abbrechbare/progressive Benutzeroberflaeche.
+MAX_MEDIA_FILES_PER_SCAN = 200
+MAX_HASH_BYTES_PER_SCAN = 512 * 1024 * 1024
+MAX_SCAN_SECONDS = 120
+
+
+class ScanSafetyLimit(RuntimeError):
+    """Scan atomar abbrechen, bevor ein PC durch langes IO/CLIs blockiert."""
 
 
 @dataclasses.dataclass
@@ -85,6 +96,8 @@ def scan_directories(
     result = ScanResult(scanned_directories=[str(d) for d in directories])
 
     found_absolute_paths: set[str] = set()
+    deadline = time.monotonic() + MAX_SCAN_SECONDS
+    hash_budget = [MAX_HASH_BYTES_PER_SCAN]
 
     with db.session() as session:
         # Einmaliges Vorladen statt einer Abfrage pro Datei (siehe Modul-
@@ -106,10 +119,19 @@ def scan_directories(
                     full_path = Path(root) / name
                     extension = full_path.suffix.lower()
 
+                    if time.monotonic() >= deadline:
+                        raise ScanSafetyLimit(
+                            'Scan nach 120 Sekunden sicherheitshalber gestoppt; '
+                            'keine Teil-Ergebnisse gespeichert. Bitte kleinere Ordner waehlen.'
+                        )
                     if not is_supported_media_extension(extension):
                         result.files_skipped_unsupported += 1
                         continue
-
+                    if result.files_found >= MAX_MEDIA_FILES_PER_SCAN:
+                        raise ScanSafetyLimit(
+                            f'Scan auf {MAX_MEDIA_FILES_PER_SCAN} Mediendateien pro Lauf begrenzt; '
+                            'keine Teil-Ergebnisse gespeichert. Bitte kleinere Ordner waehlen.'
+                        )
                     result.files_found += 1
                     absolute_path = str(full_path.resolve())
                     found_absolute_paths.add(absolute_path)
@@ -124,6 +146,7 @@ def scan_directories(
                             run_ffprobe=run_ffprobe,
                             result=result,
                             known_by_path=known_by_path,
+                            hash_budget=hash_budget,
                         )
                     except OSError as exc:
                         msg = f"Fehler beim Lesen von {full_path}: {exc}"
@@ -167,8 +190,20 @@ def _upsert_media_file(
     run_ffprobe: bool,
     result: ScanResult,
     known_by_path: dict[str, MediaFile],
+    hash_budget: list[int],
 ) -> None:
     stat = full_path.stat()
+
+    def safe_hash() -> str | None:
+        if not compute_hash:
+            return None
+        if stat.st_size > hash_budget[0]:
+            raise ScanSafetyLimit(
+                'Scan-Hash-Budget von 512 MiB ueberschritten; '
+                'keine Teil-Ergebnisse gespeichert. Bitte kleinere Ordner waehlen.'
+            )
+        hash_budget[0] -= stat.st_size
+        return sha256_of_file(full_path)
     # Naiv (UTC) gespeichert, weil SQLite/SQLAlchemy Zeitzoneninfo beim
     # Roundtrip verwirft - sonst schlagen Vergleiche zwischen frisch gelesenem
     # (tz-aware) und aus der DB geladenem (tz-naiv) mtime fehl.
@@ -179,7 +214,7 @@ def _upsert_media_file(
     file_changed = False  # PRO DATEI, nicht der kumulierte Scan-Zaehler!
 
     if is_new:
-        content_hash = sha256_of_file(full_path) if compute_hash else None
+        content_hash = safe_hash()
         media_file = MediaFile(
             absolute_path=absolute_path,
             directory=str(full_path.parent),
@@ -209,7 +244,7 @@ def _upsert_media_file(
         needs_hash = compute_hash and (
             cheap_change_detected or media_file.content_hash_sha256 is None
         )
-        content_hash = sha256_of_file(full_path) if needs_hash else media_file.content_hash_sha256
+        content_hash = safe_hash() if needs_hash else media_file.content_hash_sha256
         file_changed = cheap_change_detected or (
             needs_hash and content_hash != media_file.content_hash_sha256
         )

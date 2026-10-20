@@ -249,8 +249,24 @@ damit beseitigt. **Visuelles Apps-Gate: noch `NOT_RUN`**, bis die Inno-
 Installation anschließend abgeschlossen und „Installierte Apps“ samt
 Deinstallationsfunktion auf dem Ziel-PC tatsächlich gezeigt wird.
 
-**Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
-Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde
+## Kritischer Nutzer-PC-Scan am 20.10.2026 – Auslieferung gestoppt
+
+Beim ersten echten Scan meldete der Nutzer massenhaft aufblinkende
+PowerShell-Fenster, einen blockierten Rechner und einen erforderlichen
+harten Neustart. Ein durch CI zuvor bestandenes Installations- oder
+Registry-Gate belegt **keinen sicheren Vollscan auf fremder Hardware**.
+Die konkrete auslösende Prozesskette ist ohne Nutzerlogs noch nicht
+belegt. Der alte öffentliche Vorab-Download wurde **sofort als Draft
+zurückgezogen** (`draft=true`; anonymer Download nun HTTP 404), um
+weitere Installationen des betroffenen Scans zu verhindern. Bereits
+heruntergeladene Dateien lassen sich dadurch nicht zurückrufen. Nutzer
+angewiesen, App/Scan nicht erneut zu öffnen und keine Mediendaten zu
+löschen. Hypothesen und Gegenmaßnahmen stehen in `PROGRESS.md`;
+für einen neuen Build gelten Tests, unabhängige Windows-Prüfung und
+visuelle Nutzer-PC-Abnahme weiterhin als offen.
+
+**Aktuelle Release-Entscheidung: `FAIL / DO_NOT_USE_SCAN`,
+`NOT_READY` für jegliche Produktfreigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde
 sind für das neue Paket behoben. Der Download ist in den oben genannten
 Fällen CI-getestet und installierbar; nicht geprüfte Pflichtkriterien
 bleiben offen. Weder SmartScreen/Antivirus-Verhalten auf fremden PCs noch

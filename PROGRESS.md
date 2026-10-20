@@ -1,4 +1,32 @@
 
+## 2026-10-20 – SICHERHEITSVORFALL: Scan blockiert echten Nutzer-PC
+
+Der Nutzer meldete beim Scan rasch aufblinkende PowerShell-Fenster und
+einen nahezu unbedienbaren Rechner; ein harter Neustart war nötig.
+**Sofortmaßnahme:** Scan/App nicht erneut starten; das öffentliche
+Vorab-Release `v0.2.0-offline-preview-20261020` wurde als GitHub-Draft
+zurückgezogen. API bestätigt `draft=true`; ein anonymer HEAD auf die
+bisherige Release-Datei liefert nun HTTP 404. Die bereits heruntergeladene
+Datei auf dem Nutzer-PC bleibt unverändert. Keinen alten Link erneut als
+funktionierenden/sicheren Download anbieten. Incident-Gate:
+**FAIL / DO_NOT_USE_SCAN**. Ursache ist noch nicht abschließend belegt;
+benötigt werden Scan-Knopf/Ordnerumfang und optional die letzten
+Logzeilen ohne private Dateipfade.
+
+Im Code sind zwei plausible Prozessfenster-Quellen sichtbar: Die
+Start-BAT startet im Fehlerfall bis zu 61 separate PowerShell-Prozesse
+für Health-Checks; der mit `pythonw.exe` gestartete Core ruft beim Scan
+für neue/geänderte Dateien `ffprobe` ohne Windows-CREATE_NO_WINDOW auf.
+Hinzu kamen ein unbeschränkter synchroner Scan, Hash-I/O und die
+Möglichkeit paralleler /scan-Aufrufe. **Plausibel, nicht als gesicherte
+Nutzer-PC-Ursache ausgeben.** Gegenmaßnahmen in Arbeit: gemeinsame
+fensterlose CLI-Startoptionen für FFprobe/FFmpeg/fpcalc, nur noch ein
+PowerShell-Prozess pro Health-Check-Wartephase, atomar abbrechende
+Scan-Datei-/Hash-/Zeitbudgets, API-Sperre paralleler Scans, Tests.
+Diese Änderungen sind noch nicht auf dem Nutzer-PC getestet; keine
+Freigabe oder Neuveröffentlichung ohne belegte Windows-Prüfung und
+gesonderte Nutzer-PC-Abnahme. Lokal keine GB-Dateien speichern.
+
 ## 2026-10-20 – Pflicht: GENESIS muss unter Windows „Installierte Apps“ erscheinen
 
 Nutzerkorrektur: Ein vorhandener HKCU-Uninstall-Schlüssel allein genügt

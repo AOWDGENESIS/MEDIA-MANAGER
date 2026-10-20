@@ -9,6 +9,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 from pathlib import Path
+from genesis_core.processes import media_cli_options
 
 
 class FFmpegNotAvailable(RuntimeError):
@@ -50,6 +51,7 @@ def render_conversion(
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=timeout_seconds, check=False,
+            **media_cli_options(),
         )
     except subprocess.TimeoutExpired as exc:
         raise FFmpegConvertError(f"ffmpeg-Timeout bei der Konvertierung von {path}") from exc

@@ -1,4 +1,40 @@
 
+## 2026-10-20 – Oeffentlicher ZIP-Link ohne GitHub-Anmeldung nachweislich erfolgreich
+
+Nach ausdruecklicher Zustimmung des Nutzers wurde **kein vollstaendig
+freigegebenes Produkt-Release**, sondern ein klar gekennzeichnetes
+[oeffentliches Vorab-Release](https://github.com/AOWDGENESIS/MEDIA-MANAGER/releases/tag/v0.2.0-offline-preview-20261020)
+veroeffentlicht. Direkter stabiler Download:
+[GenesisMediaManager-Komplettpaket.zip](https://github.com/AOWDGENESIS/MEDIA-MANAGER/releases/download/v0.2.0-offline-preview-20261020/GenesisMediaManager-Komplettpaket.zip).
+[CI-Lauf 39380054666](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39380054666)
+zu `75eb08f84ddba76d978867af4419335303056b87` ist gruen. Er lud das
+aktuelle Artefakt `12189527827` (Versuch 2) auf einem Windows-Runner,
+pruefte ID/Run/den getesteten Quell-Commit `536c069...`, Laenge,
+SHA-256/ZIP-CRC, lud es als Vorab-Release-Asset hoch und lud den
+**oeffentlichen Link ohne Authorization-Header erneut vollstaendig**.
+SHA-256/Laenge dieses anonymen Downloads stimmten ueberein; eine separate
+anonyme HEAD-Anfrage an die stabile Release-URL liefert 302 zur Datei.
+GitHub-Release-API: Prerelease=true, draft=false, Assetstate=uploaded,
+Groesse **1.009.996.594 Bytes**, Digest
+`sha256:22f00e8cbde23fe428dc0800b9944bf1819be316214deb248b03ade4f772aeef`.
+Der Tag verweist auf den getesteten Quellstand, nicht auf einen
+ungetesteten Installer. Alle grossen Dateien lagen ausschliesslich in
+einem eigenen CI-Tempordner und wurden dort entfernt. Lokaler Workspace
+`/home/user` ca. **11 MiB**, keine ZIP/Binaerdatei im Git-Repository.
+
+**Abgrenzung:** Das strenge Produkt-Release-Gate bleibt `NOT_READY` wegen
+Nichtadmin-, Lizenz-/CVE- und Nutzer-PC-/visueller Pruefungen. Auch das
+bestehende Vorab-Release ist nicht digital signiert und keine Garantie
+fuer SmartScreen/Antivirus-Freigabe. Eine fruehere Behauptung, der
+Actions-Artefakt-Link liefere nur wegen fehlender Anmeldung 404, war
+unvollstaendig: Der Lauf-Rerun hatte das urspruengliche Artefakt geloescht;
+diese Ursache wurde korrigiert. Nutzer jetzt **nur den neuen Release-Link**
+geben, nicht alte Actions-Artefakt-Links wiederholen.
+
+**Naechster sicherer Schritt:** Nutzer installiert die Vorabversion auf
+einem Windows-PC und meldet konkrete Probleme/Screenshots; dann gezielt
+und ohne Behauptung vollstaendiger UI-Abnahme nachpruefen.
+
 ## 2026-10-20 – Downloadlink-404: Ursache nach Run-Rerun erkannt; Vorab-Release vorbereitet
 
 Der bisher genannte Actions-Artefakt-Link `12187150814` liefert tatsaechlich

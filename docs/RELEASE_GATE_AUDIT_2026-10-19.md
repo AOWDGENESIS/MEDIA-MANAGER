@@ -172,6 +172,29 @@ Software-Signatur und kein Nachweis der Unbedenklichkeit des Codes.
 Weiter `NOT_RUN`: echte Installation als Nichtadmin, abschließende
 Lizenz-/CVE-/Supply-Chain-Abnahme und visuelle Nutzer-PC-Abnahme.
 
+## Lieferweg am 20.10.2026: öffentliches VORAB-Release statt veralteter Actions-URL
+
+Die alte Actions-Artefakt-ID `12187150814` verschwand nach einem Rerun
+(`run_attempt=2`) des ansonsten grünen Laufs `39251709035`; ihr Link
+lieferte 404. Die frühere Erklärung „nur fehlende Anmeldung“ war nicht
+ausreichend. Nach **ausdrücklicher Nutzerfreigabe für ein öffentliches
+Vorab-Release** wurde das aktuelle Artefakt `12189527827` per separatem
+[CI-Lauf 39380054666](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39380054666)
+an den festen Tag `v0.2.0-offline-preview-20261020` auf dem getesteten
+Quellstand `536c06924e34c2619ef3184aa9ed0b1784d589e6` gebunden.
+
+Stabiler öffentlicher Download:
+[GenesisMediaManager-Komplettpaket.zip](https://github.com/AOWDGENESIS/MEDIA-MANAGER/releases/download/v0.2.0-offline-preview-20261020/GenesisMediaManager-Komplettpaket.zip).
+Release-Metadaten: `prerelease=true`, `draft=false`, eine Assetdatei
+1.009.996.594 Bytes mit Digest
+`sha256:22f00e8cbde23fe428dc0800b9944bf1819be316214deb248b03ade4f772aeef`.
+Der Veröffentlichungslauf prüfte vorher nochmals Artefakt-ID, Herkunft,
+SHA-256 und ZIP-CRC; danach lud ein Windows-Runner den Release-Link
+**ohne Authentifizierung** vollständig neu und bestätigte erneut Dateigröße
+und SHA-256. Das ist ein Nachweis für diesen öffentlich nutzbaren Link,
+nicht für spätere Verfügbarkeit oder den PC des Nutzers. Das >1-GB-ZIP
+wurde nie im auf 100 MiB begrenzten lokalen Workspace abgelegt.
+
 **Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
 Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde
 sind für das neue Paket behoben. Der Download ist in den oben genannten

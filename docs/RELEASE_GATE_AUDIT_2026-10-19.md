@@ -202,13 +202,16 @@ Der Nutzer hat den äußeren ZIP-Hash auf seinem Windows-PC berechnet:
 (identisch mit dem veröffentlichten Digest, Groß-/Kleinschreibung
 unerheblich). Screenshot-Beleg: Paket entpackt, Setup-EXE gestartet;
 SmartScreen meldete mangels Signatur einen unbekannten Herausgeber.
-Im Inno-Wizard erschien anschließend der **vorgesehene Abbruch wegen einer
-bereits vorhandenen MSI- oder ZIP-Installation**. Der konkrete Auslöser
-(Datei/Marker/Registry) ist noch nicht identifiziert. **Dieser Versuch
-beweist KEINE erfolgreiche Installation oder visuelle Komplettabnahme
-auf dem Nutzer-PC** (`BLOCKED`). Reguläre Deinstallation der bestehenden
-Variante prüfen, nicht manuell Dateibaum/Registry löschen oder Schutz
-umgehen; bei fehlendem Apps-Eintrag nur lesende Diagnose anfordern.
+Im Inno-Wizard erschien anschließend die Meldung „bereits per MSI oder
+ZIP installiert“. Der Nutzer widerspricht: Es sei nichts installiert.
+Die Meldung allein beweist **KEINE Altinstallation**: Derselbe Codepfad
+prüft auch Dateireste im Ziel- oder Standardordner, einen MSI-Marker oder
+einen möglicherweise verwaisten HKCU-Uninstall-Schlüssel. Welche Bedingung
+anschlug, ist noch unbekannt. **Keine erfolgreiche Installation oder
+visuelle Komplettabnahme auf dem Nutzer-PC** (`BLOCKED`). Zuerst die
+Bedingungen und den ausgewählten Zielpfad nur lesend diagnostizieren;
+keine Deinstallation, Registry-/Dateilöschung oder Schutzumgehung ohne
+Beleg empfehlen.
 
 **Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
 Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde

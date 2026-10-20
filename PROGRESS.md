@@ -13,15 +13,24 @@ nachgewiesen ist. Dies ist ein offenes Nutzer-PC-Gate.
 Quellcode nachgebessert: Inno verlangt explizit den HKCU-Uninstall-Eintrag
 und benennt mögliche Reste statt eine vorhandene Installation zu
 behaupten. Der ZIP-Installer setzt Versteck-Flags beim Wiederverwenden
-eines verwaisten Registry-Eintrags zurück. Neue Windows-CI-Checks sollen
-für Inno (Standardpfad und Wizard-Pfad) und ZIP DisplayName, Version,
-InstallLocation, UninstallString, Uninstaller, fehlende Versteck-Flags
-sowie Entfernen des Eintrags bei Deinstallation prüfen. Der ZIP-Test
-simuliert einen vorherigen versteckten Uninstall-Eintrag. **CI noch nicht
-gelaufen**; ein Registry-Test ersetzt keinen visuellen Windows-Settings-
-Test auf dem Nutzer-PC. Kein altes Release-ZIP als bereits korrigiert
-bezeichnen. Naechster Schritt: Windows-CI testen, Ergebnis abwarten,
-danach Nutzer beim sichtbaren Apps-Eintrag gezielt verifizieren lassen.
+eines verwaisten Registry-Eintrags zurück. Windows-CI kontrolliert für
+Inno (Standardpfad und Wizard-Pfad) sowie ZIP DisplayName, Version,
+InstallLocation, UninstallString, vorhandenen Uninstaller, fehlende
+Versteck-Flags und Entfernen des Eintrags bei Deinstallation. Der ZIP-Test
+simuliert einen vorherigen versteckten Uninstall-Eintrag.
+
+[Windows-CI-Lauf 39385648302](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39385648302)
+zu Commit `7398a44bc62db444dd180fdcd504cf78ba214fe3` **PASS**: Build,
+beide Inno-Registrierungswege inkl. Deinstallation, ZIP-Wiederregistrierung
+inkl. Deinstallation, MSI-Smoke und unabhängiger Downloadtest sind grün.
+CI-Artefakt-ID `12247397846`, 1.010.061.124 Bytes, Digest
+`sha256:fb57fcce171bd2ebaaebaffa9630fafcc9d9910ea00208ed6352736371ecdd3b`;
+noch **kein** neues öffentliches Release daraus. Das bestehende öffentliche
+Vorab-Release enthält weiterhin die ältere Paketversion von `536c069`.
+Ein Registry-Test ersetzt keinen visuellen Windows-Settings-Test auf dem
+Nutzer-PC; die tatsächliche Anzeige bleibt bis zum Nutzerbeleg **OFFEN**.
+Nicht behaupten, das schon heruntergeladene alte ZIP enthalte die neue
+Korrektur. Lokaler Workspace weiterhin unter 100 MiB.
 
 ## 2026-10-20 – Nutzer-PC: ZIP-Hash OK, Inno-Sperre ohne bestätigte Altinstallation
 

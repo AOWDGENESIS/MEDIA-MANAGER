@@ -217,6 +217,35 @@ lesend prüfen, ob das zum Schlüssel gehörende Uninstall-Skript existiert
 und welche InstallLocation/UninstallString eingetragen sind. Keine
 pauschale Löschung oder Schutzumgehung empfehlen.
 
+## Nachtrag: „Installierte Apps“ ist Pflicht, Registry-Test bestanden – UI noch offen
+
+Der Nutzer erklärte die Anzeige unter Windows „Installierte Apps“ samt
+Deinstallationsmöglichkeit ausdrücklich zur Pflicht. Die frühere ZIP-
+Registrierung besaß zwar DisplayName und Uninstaller, war aber laut Nutzer
+in den Windows-Einstellungen nicht sichtbar. Ursache auf seinem PC noch
+ungeklärt; die blockierte Inno-Installation konnte dort noch keinen neuen
+Uninstall-Eintrag anlegen.
+
+Commit `7398a44bc62db444dd180fdcd504cf78ba214fe3` ergänzt explizite
+Inno-Uninstall-Registrierung, macht die Konfliktmeldung wahrheitsgemäß
+(auch Dateireste statt zwingend vorhandener Installation), setzt
+ZIP-Versteck-Flags beim Wiederverwenden eines alten Eintrags zurück und
+prüft die vollständigen HKCU-Uninstall-Werte, den realen Deinstaller sowie
+die Entfernung nach Deinstallation automatisiert. Der ZIP-Test beginnt
+mit einem absichtlich versteckten Alteintrag. [Windows-CI-Lauf 39385648302](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39385648302)
+hat Build, Inno-Wizard und Inno-Standardinstallation, ZIP-Installation,
+Deinstallation sowie unabhängigen Paket-Download **bestanden**.
+Aktuelles CI-Artefakt `12247397846`, Digest
+`sha256:fb57fcce171bd2ebaaebaffa9630fafcc9d9910ea00208ed6352736371ecdd3b`.
+
+**Wichtige Abgrenzung:** Der vorhandene *öffentliche* Release-Link liefert
+weiterhin das ältere, bereits heruntergeladene Paket; die neue CI-Version
+wurde nicht stillschweigend unter demselben Tag ausgetauscht. Die grüne
+Registry-Prüfung belegt nur Registrierungsdaten, nicht die sichtbare
+Windows-Settings-Liste auf dem individuellen PC. **Visuelles Apps-Gate:
+noch `NOT_RUN`**, bis ein Nutzer-Screenshot nach abgeschlossener
+Installation es bestätigt.
+
 **Aktuelle Release-Entscheidung: `NOT_READY` für eine *vollständige*
 Freigabe nach GENESIS OMEGA v10.1.** Die früheren konkreten `FAIL`-Befunde
 sind für das neue Paket behoben. Der Download ist in den oben genannten

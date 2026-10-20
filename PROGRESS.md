@@ -1,4 +1,36 @@
 
+## 2026-10-20 – Downloadlink-404: Ursache nach Run-Rerun erkannt; Vorab-Release vorbereitet
+
+Der bisher genannte Actions-Artefakt-Link `12187150814` liefert tatsaechlich
+HTTP 404. **Korrektur der frueheren Diagnose:** Der Lauf `39251709035`
+wurde erneut ausgefuehrt (`run_attempt=2`), dabei wurde die alte Artefakt-ID
+entfernt und als `12189527827` neu hochgeladen. Der Fehler war daher nicht
+allein eine fehlende GitHub-Anmeldung; einen aufgehobenen Artefakt-Link
+nochmals als Loesung zu senden war falsch. Der neue Artefakt-Digest ist
+`sha256:22f00e8cbde23fe428dc0800b9944bf1819be316214deb248b03ade4f772aeef`,
+Groesse 1.009.996.594 Bytes; die zweite Run-Ausfuehrung ist laut GitHub-API
+komplett erfolgreich (Build und unabhaengiger Downloadtest). Die alten
+SHA-/Groessenangaben gelten nur fuer Versuch 1, NICHT fuer die aktuelle Datei.
+
+**Nutzerfreigabe:** Nach ausdruecklicher Zustimmung wird genau diese
+gepruefte ZIP als **oeffentliches GitHub-VORAB-Release** angeboten; nicht als
+vollstaendig nach GENESIS OMEGA v10.1 freigegeben. Neu sind
+`.github/workflows/publish-offline-prerelease.yml`,
+`scripts/Publish-OfflinePrerelease.ps1` und
+`docs/PRERELEASE_NOTES_2026-10-20.md`. Der separate Windows-Job soll das
+gepinnte Artefakt in `RUNNER_TEMP` laden, ID/Run/Commit/SHA/CRC pruefen,
+es als Asset zu einem Tag auf dem getesteten Commit stellen und den
+**oeffentlichen Link ohne GitHub-Anmeldung** nochmals vollstaendig laden
+und hashen. Keine 1-GB-Dateien im hiesigen Workspace, keine Zugangsdaten
+im Repo. `NOT_RUN` bis zum neuen CI-Ergebnis; kein Link als funktionierend
+behaupten, solange der anonyme Test nicht gruen ist. Release-Gate als
+Gesamtheit bleibt wegen Nichtadmin-/Lizenz-/CVE-/Nutzer-PC-Pruefungen
+`NOT_READY`.
+
+**Naechster Schritt:** Statische Pruefung, nur auf dem festen Arbeitsbranch
+pushen, Release-CI beobachten und erst nach bestaetigtem anonymem
+Download den stabilen Link an den Nutzer geben.
+
 ## 2026-10-19 – Veröffentlichtes äußeres ZIP auf zweitem Windows-Runner bestanden
 
 [Windows-CI-Lauf 39251709035](https://github.com/AOWDGENESIS/MEDIA-MANAGER/actions/runs/39251709035)

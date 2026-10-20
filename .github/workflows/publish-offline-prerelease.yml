@@ -1,0 +1,35 @@
+name: Geprueftes Windows-Offlinepaket als VORAB-Release bereitstellen
+
+# Einmaliger Push dieses Workflows auf dem festen Arena-Arbeitsbranch.
+# Artefakt und SHA-256 stammen aus dem zuvor gruenen Lauf (Versuch 2).
+# KEINE erneute Paket-Erzeugung, keine Dateien >100 MiB im lokalen Workspace.
+on:
+  push:
+    branches: [arena/b54df116-media-manager]
+    paths:
+      - '.github/workflows/publish-offline-prerelease.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    name: Oeffentliches Vorab-Release und anonymer Downloadtest
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Quellcode auschecken
+        uses: actions/checkout@v5
+
+      - name: Autorisiertes Artefakt pruefen, als Prerelease hochladen, Link anonym testen
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/Publish-OfflinePrerelease.ps1 `
+            -ArtifactId '12189527827' `
+            -RunId '39251709035' `
+            -TestedCommit '536c06924e34c2619ef3184aa9ed0b1784d589e6' `
+            -ExpectedDigest 'sha256:22f00e8cbde23fe428dc0800b9944bf1819be316214deb248b03ade4f772aeef' `
+            -Tag 'v0.2.0-offline-preview-20261020'

@@ -34,28 +34,29 @@ try {
     # und ffprobe ausfuehren (nicht nur die einzelnen CLIs ansprechen).
     # Ausschliesslich synthetische Testdaten unter RUNNER_TEMP.
     $env:PYTHONPATH = Join-Path $PackageDir 'backend'
-    $env:GENESIS_CI_SCAN_DIR = $scanDir
+    # Die hermetische Umgebung versteckt absichtlich alle globalen Tools;
+    # nur fuer diesen lokalen Scan die MITGELIEFERTEN CLIs freischalten.
+    $env:PATH = "$(Split-Path -Parent $ffprobe);$(Split-Path -Parent $fpcalc);$env:PATH"
     $python = Join-Path $PackageDir 'runtime\python\python.exe'
-    $scanScript = @'
-import os
-from pathlib import Path
-from sqlalchemy import select
-from genesis_core.db import Database
-from genesis_core.db.models import MediaFile, TechnicalMetadata
-from genesis_core.scanner.scanner import scan_directories
-root = Path(os.environ['GENESIS_CI_SCAN_DIR'])
-db = Database(root / 'genesis-ci-scan.sqlite')
-result = scan_directories(db, [root])
-assert result.files_found == 1 and result.files_new == 1 and not result.errors, result
-with db.session() as session:
-    media = session.execute(select(MediaFile)).scalar_one()
-    technical = session.execute(select(TechnicalMetadata)).scalar_one()
-    assert media.filename == 'genesis-offline-ci-tone.wav'
-    assert technical.duration_seconds >= 7, technical.duration_seconds
-print('GENESIS scan: synthetisches Audio gelesen, Hash und FFprobe-Metadaten gespeichert')
-'@
-    & $python -c $scanScript
-    if ($LASTEXITCODE -ne 0) { throw 'Echter Scan mit mitgeliefertem ffprobe/Python fehlgeschlagen' }
+    $scanScript = Join-Path $PSScriptRoot 'Smoke-Test-Scanner.py'
+    if (-not (Test-Path -LiteralPath $scanScript)) { throw "Scanner-Testskript fehlt: $scanScript" }
+    # Python-Fehler direkt als Annotation ausgeben, da GitHub-Rawlogs aus
+    # dieser Umgebung nicht immer abrufbar sind.
+    $env:PYTHONUNBUFFERED = '1'
+    $oldNativePreference = $PSNativeCommandUseErrorActionPreference
+    $PSNativeCommandUseErrorActionPreference = $false
+    try {
+        $scanOutput = & $python $scanScript 2>&1
+        $scanExit = $LASTEXITCODE
+    } finally {
+        $PSNativeCommandUseErrorActionPreference = $oldNativePreference
+    }
+    $scanOutput | ForEach-Object {
+        $line = ($_.ToString() -replace '%', '%25') -replace '[\r\n]+', ' '
+        if ($scanExit -ne 0) { Write-Host "::error::Scanner-Test: $line" }
+        else { Write-Host $line }
+    }
+    if ($scanExit -ne 0) { throw "Echter Scan mit mitgeliefertem ffprobe/Python fehlgeschlagen (Code $scanExit)" }
     Write-Host 'Medien-Funktionstest erfolgreich: FFmpeg-Synthese, FFprobe/Chromaprint und GENESIS-Scan.'
 } catch {
     $message = ($_.Exception.Message -replace '%', '%25') -replace '[\r\n]+', ' '

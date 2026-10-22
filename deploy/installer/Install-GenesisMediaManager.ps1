@@ -129,6 +129,16 @@ foreach ($part in @("client", "backend", "i18n", "runtime")) {
 }
 Write-Ok "Programmdateien nach '$InstallDir' kopiert (Client/Core-Service/Sprachdateien)"
 
+# Das Start-BAT referenziert diesen Helfer im INSTALLIERTEN Ordner; aus
+# dem Entpack-Verzeichnis zu starten wuerde nach dem Aufraeumen scheitern.
+$healthSource = Join-Path $ScriptRoot 'Check-GenesisCore.py'
+if (-not (Test-Path -LiteralPath $healthSource -PathType Leaf)) {
+    throw "Offline-Healthcheck fehlt im Paket: $healthSource"
+}
+$installerDest = Join-Path $InstallDir 'installer'
+New-Item -ItemType Directory -Force -Path $installerDest | Out-Null
+Copy-Item -LiteralPath $healthSource -Destination (Join-Path $installerDest 'Check-GenesisCore.py') -Force
+
 # Vorsichtshalber auch die KOPIERTEN Skripte entsperren (NTFS kann die
 # Zone.Identifier-Markierung bei Copy-Item je nach Windows-Version/
 

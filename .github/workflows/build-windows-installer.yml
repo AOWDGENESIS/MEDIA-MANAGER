@@ -111,6 +111,9 @@ jobs:
           & $python $probe 0
           if ($LASTEXITCODE -ne 2) { throw 'Health-Check akzeptiert ungueltige Versuchszahl' }
           Write-Host '::notice::Windows CREATE_NO_WINDOW, Scan-Limits und PowerShell-freier Launcher geprueft'
+          # pwsh/GitHub Actions haengt implizit exit $LASTEXITCODE an: nach
+          # dem absichtlich negativen Probe-Test (2) explizit zuruecksetzen.
+          $global:LASTEXITCODE = 0
 
       - name: Synthetische Windows-Scan- und Launcher-Regression
         shell: pwsh

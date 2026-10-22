@@ -49,6 +49,7 @@ Source: "{#Payload}\client\*"; DestDir: "{app}\client"; Flags: ignoreversion rec
 Source: "{#Payload}\backend\*"; DestDir: "{app}\backend"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Payload}\i18n\*"; DestDir: "{app}\i18n"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Payload}\runtime\*"; DestDir: "{app}\runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Payload}\installer\Check-GenesisCore.py"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "{#Payload}\installer\Test-OfflineRuntime.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "{#Payload}\installer\Stop-GenesisProcesses.ps1"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "{#Payload}\installer\Start-GenesisMediaManager.bat"; DestDir: "{app}"; Flags: ignoreversion

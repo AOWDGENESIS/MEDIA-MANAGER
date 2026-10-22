@@ -1,4 +1,6 @@
-# GENESIS Media Manager 0.2.0 – Windows-x64-Offlinepaket (Vorabversion)
+# GENESIS Media Manager 0.2.0 – Windows-x64-Offlinepaket (zurückgezogen)
+
+**Stand 22.10.2026: Dieses frühere Vorab-Release wurde wegen des gemeldeten Scan-Vorfalls zurückgezogen (GitHub-Draft). Die folgende Anleitung ist historisch, kein aktueller Download-Aufruf. Bereits heruntergeladene Kopien nicht zum Scan einsetzen. Eine neue Freigabe ist nicht erfolgt.**
 
 **Vorabversion – NICHT als vollständig freigegebenes Release nach GENESIS OMEGA v10.1 kennzeichnen.** Das Paket ist für einen Installationstest auf einem Windows-PC bestimmt. Es ist keine Garantie für Fehlerfreiheit oder Verträglichkeit mit der Sicherheitssoftware des Zielrechners.
 

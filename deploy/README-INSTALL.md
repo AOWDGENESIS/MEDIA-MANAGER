@@ -1,5 +1,7 @@
 # GENESIS Media Manager – Offline-Installation unter Windows x64
 
+**Sicherheitshinweis (22.10.2026):** Das öffentliche Vorab-Release wurde nach einem gemeldeten Scan-Vorfall zurückgezogen. Auch ein erfolgreicher neuer CI-Build ist noch keine Freigabe für einen Scan auf dem betroffenen Nutzer-PC. Die folgenden Installationsschritte gelten erst für ein ausdrücklich freigegebenes, erneut geprüftes Paket. Alte ZIP-Kopien nicht für Scan-Tests verwenden. Siehe `FORTSCHRITT.md` im Quellcode.
+
 Das Windows-CI-Paket enthält den self-contained .NET/WPF-Client, den
 Python-Core samt installierter Python-Pakete, `ffmpeg`, `ffprobe` und
 `fpcalc` (Chromaprint). **Auf dem Ziel-PC braucht die Installation weder

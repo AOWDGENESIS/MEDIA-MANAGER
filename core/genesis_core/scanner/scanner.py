@@ -48,6 +48,7 @@ import datetime as dt
 import os
 import time
 from pathlib import Path
+from typing import Callable
 
 from sqlalchemy import select
 
@@ -88,6 +89,8 @@ def scan_directories(
     directories: list[str | Path],
     compute_hash: bool = True,
     run_ffprobe: bool = True,
+    checkpoint: Callable[[], None] | None = None,
+    progress: Callable[[int, str], None] | None = None,
 ) -> ScanResult:
     """Fuehrt einen vollstaendigen, lesenden Scan der angegebenen Verzeichnisse
     durch und aktualisiert die Datenbank entsprechend.
@@ -99,6 +102,15 @@ def scan_directories(
     deadline = time.monotonic() + MAX_SCAN_SECONDS
     hash_budget = [MAX_HASH_BYTES_PER_SCAN]
 
+    def check() -> None:
+        if checkpoint is not None:
+            checkpoint()
+        if time.monotonic() >= deadline:
+            raise ScanSafetyLimit(
+                'Scan nach 120 Sekunden sicherheitshalber gestoppt; '
+                'keine Teil-Ergebnisse gespeichert. Bitte kleinere Ordner waehlen.'
+            )
+
     with db.session() as session:
         # Einmaliges Vorladen statt einer Abfrage pro Datei (siehe Modul-
         # Docstring, Punkt 3).
@@ -107,6 +119,7 @@ def scan_directories(
         }
 
         for directory in directories:
+            check()
             if not directory.exists():
                 msg = f"Verzeichnis nicht gefunden, wird uebersprungen: {directory}"
                 log.warning(msg)
@@ -115,15 +128,12 @@ def scan_directories(
 
             log.info("Scan gestartet: %s", directory)
             for root, _dirs, files in os.walk(directory):
+                check()
                 for name in files:
                     full_path = Path(root) / name
                     extension = full_path.suffix.lower()
 
-                    if time.monotonic() >= deadline:
-                        raise ScanSafetyLimit(
-                            'Scan nach 120 Sekunden sicherheitshalber gestoppt; '
-                            'keine Teil-Ergebnisse gespeichert. Bitte kleinere Ordner waehlen.'
-                        )
+                    check()
                     if not is_supported_media_extension(extension):
                         result.files_skipped_unsupported += 1
                         continue
@@ -147,12 +157,18 @@ def scan_directories(
                             result=result,
                             known_by_path=known_by_path,
                             hash_budget=hash_budget,
+                            checkpoint=check,
+                            deadline=deadline,
                         )
                     except OSError as exc:
                         msg = f"Fehler beim Lesen von {full_path}: {exc}"
                         log.error(msg)
                         result.errors.append(msg)
+                    if progress is not None:
+                        progress(result.files_found, str(full_path))
+                    check()
 
+        check()
         # Verschwundene Dateien erkennen (Punkt 12) - werden markiert, NICHT
         # aus der DB geloescht (Prinzip #4: nichts wird ungefragt geloescht).
         for media_file in known_by_path.values():
@@ -167,6 +183,7 @@ def scan_directories(
                 media_file.missing_since = dt.datetime.now(dt.UTC)
                 result.files_missing += 1
                 log.warning("Datei nicht mehr auffindbar: %s", media_file.absolute_path)
+        check()  # unmittelbar vor dem Commit: Abbruch => kompletter Rollback
 
     log.info(
         "Scan abgeschlossen: %d gefunden, %d neu, %d geaendert, %d unveraendert, "
@@ -191,6 +208,8 @@ def _upsert_media_file(
     result: ScanResult,
     known_by_path: dict[str, MediaFile],
     hash_budget: list[int],
+    checkpoint: Callable[[], None],
+    deadline: float,
 ) -> None:
     stat = full_path.stat()
 
@@ -203,7 +222,7 @@ def _upsert_media_file(
                 'keine Teil-Ergebnisse gespeichert. Bitte kleinere Ordner waehlen.'
             )
         hash_budget[0] -= stat.st_size
-        return sha256_of_file(full_path)
+        return sha256_of_file(full_path, checkpoint=checkpoint)
     # Naiv (UTC) gespeichert, weil SQLite/SQLAlchemy Zeitzoneninfo beim
     # Roundtrip verwirft - sonst schlagen Vergleiche zwischen frisch gelesenem
     # (tz-aware) und aus der DB geladenem (tz-naiv) mtime fehl.
@@ -263,7 +282,9 @@ def _upsert_media_file(
             result.files_unchanged += 1
 
     if run_ffprobe and (is_new or file_changed):
-        raw = probe_file(full_path)
+        checkpoint()
+        raw = probe_file(full_path, timeout_seconds=max(0.1, min(10.0, deadline - time.monotonic())))
+        checkpoint()
         if raw is not None:
             summary = extract_technical_summary(raw)
             tech = session.execute(

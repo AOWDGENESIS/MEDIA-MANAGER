@@ -102,10 +102,29 @@ jobs:
           $env:PYTHONPATH = (Resolve-Path 'build/package/backend').Path
           & $python -c 'import subprocess; from genesis_core.processes import media_cli_options; from genesis_core.scanner.scanner import MAX_MEDIA_FILES_PER_SCAN, MAX_HASH_BYTES_PER_SCAN; assert media_cli_options()["creationflags"] == subprocess.CREATE_NO_WINDOW; assert MAX_MEDIA_FILES_PER_SCAN <= 200; assert MAX_HASH_BYTES_PER_SCAN <= 512 * 1024 * 1024'
           if ($LASTEXITCODE -ne 0) { throw 'Windows-Prozessfenster-/Scan-Limits fehlen im Paket' }
-          $launcher = @(Get-Content deploy/installer/Start-GenesisMediaManager.bat |
-            Where-Object { $_ -match '^powershell -NoProfile ' })
-          if ($launcher.Count -ne 1) { throw "Launcher startet $($launcher.Count) statt einen PowerShell-Prozess pro Wartephase" }
-          Write-Host '::notice::Windows CREATE_NO_WINDOW, Scan-Limits und Launcher-Gesundheitscheck geprueft'
+          $launcherText = Get-Content deploy/installer/Start-GenesisMediaManager.bat -Raw
+          if ($launcherText -match '(?im)^\s*powershell(?:\.exe)?\s' -or
+              $launcherText -notmatch 'Check-GenesisCore\.py') {
+            throw 'Launcher darf keine PowerShell mehr starten; Python-Health-Check fehlt'
+          }
+          $probe = (Resolve-Path build/package/installer/Check-GenesisCore.py).Path
+          & $python $probe 0
+          if ($LASTEXITCODE -ne 2) { throw 'Health-Check akzeptiert ungueltige Versuchszahl' }
+          Write-Host '::notice::Windows CREATE_NO_WINDOW, Scan-Limits und PowerShell-freier Launcher geprueft'
+
+      - name: Synthetische Windows-Scan- und Launcher-Regression
+        shell: pwsh
+        timeout-minutes: 6
+        run: |
+          $python = (Resolve-Path 'build/package/runtime/python/python.exe').Path
+          $backend = (Resolve-Path 'build/package/backend').Path
+          $deps = Join-Path $env:RUNNER_TEMP 'genesis-ci-test-deps'
+          & $python -m pip install --no-cache-dir --disable-pip-version-check --target $deps 'pytest>=8,<9'
+          if ($LASTEXITCODE -ne 0) { throw 'pytest fuer CI-Tests nicht installierbar' }
+          $env:PYTHONPATH = "$deps;$backend;$env:GITHUB_WORKSPACE/core"
+          & $python -m pytest -q core/tests/test_scan_async.py core/tests/test_scan_safety.py core/tests/test_launcher_health.py
+          if ($LASTEXITCODE -ne 0) { throw 'Synthetische Windows-Scan-/Launcher-Tests fehlgeschlagen' }
+          # pytest liegt nur in RUNNER_TEMP, NICHT in der ausgelieferten Runtime.
 
       - name: Mitgelieferte FFmpeg- und Chromaprint-Werkzeuge praktisch pruefen
         shell: pwsh

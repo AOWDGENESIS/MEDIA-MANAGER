@@ -10,12 +10,12 @@ from __future__ import annotations
 import dataclasses
 import datetime as dt_module
 from pathlib import Path
-from threading import Lock
+from threading import Event, Lock, Thread
 from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import func, select
 
 from genesis_core import __version__
@@ -175,7 +175,7 @@ from genesis_core.repair import (
     plan_repairs,
     preview_repairs,
 )
-from genesis_core.scanner.scanner import scan_directories
+from genesis_core.scanner.scanner import ScanSafetyLimit, scan_directories
 from genesis_core.storage import InsufficientStorageError
 from genesis_core.video import (
     VideoApplyNotConfirmedError,
@@ -210,7 +210,7 @@ class ScanRequest(BaseModel):
     (String-Annotationen koennen dann nicht gegen die Funktions-Closure
     aufgeloest werden) - siehe PROGRESS.md Fehlerhistorie."""
 
-    directories: list[str]
+    directories: list[str] = Field(min_length=1, max_length=10)
     compute_hash: bool = True
     run_ffprobe: bool = True
 
@@ -529,6 +529,20 @@ class AppState:
         settings.ensure_directories()
         configure_logging(log_dir=settings.paths.resolved_log_dir())
         self.db = Database(settings.paths.resolved_database_path())
+        # Nach hartem Neustart kann kein Scan-Thread mehr existieren. Nur
+        # verwaiste Scan-Jobs kennzeichnen; niemals abgeschlossene oder
+        # andere Job-Typen nachtraeglich ueberschreiben.
+        with self.db.session() as session:
+            stale_scans = session.execute(
+                select(ProcessingJob).where(
+                    ProcessingJob.job_type == "scan",
+                    ProcessingJob.status.in_((JobStatus.PENDING, JobStatus.RUNNING)),
+                )
+            ).scalars().all()
+            for stale in stale_scans:
+                stale.status = JobStatus.FAILED
+                stale.finished_at = dt_module.datetime.now(dt_module.UTC)
+                stale.error_count += 1
         self.jobs = JobManager(self.db, app_version=__version__)
         self.ai_provider = build_ai_provider(settings.ai)
         self.tts_provider = build_tts_provider(settings.voice)
@@ -648,7 +662,9 @@ def _deep_merge_dict(base: dict[str, Any], updates: dict[str, Any]) -> dict[str,
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.load()
     state = AppState(settings)
-    scan_lock = Lock()  # keine parallelen Vollscans im FastAPI-Threadpool
+    scan_lock = Lock()  # ein Scan, auch fuer Legacy-/scan
+    scan_state_lock = Lock()
+    active_scans: dict[str, dict] = {}
 
     app = FastAPI(
         title="GENESIS Media Manager - Core API",
@@ -707,6 +723,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health(state: AppState = Depends(get_state)) -> dict:
         return {
             "status": "ok",
+            "app": "GENESIS Media Manager",
             "version": __version__,
             "safe_test_mode": state.settings.general.safe_test_mode,
             "ai_provider": state.ai_provider.name,
@@ -807,6 +824,92 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "not_yet_analyzed": no_technical,
             "running_jobs": running_jobs,
         }
+
+    @app.post("/scan/start", dependencies=[require_token], status_code=202)
+    def start_scan(req: ScanRequest, state: AppState = Depends(get_state)) -> dict:
+        """Job-ID sofort ausliefern; begrenzter Scan im einzigen Hintergrundthread.
+
+        Fortschritt/Abbruch liegen bewusst im Speicher: ein offener SQLite-
+        Schreibvorgang darf nicht mit separaten Status-Commits konkurrieren.
+        """
+        if not scan_lock.acquire(blocking=False):
+            raise HTTPException(status_code=409, detail="Ein Scan laeuft bereits.")
+        try:
+            job_id = state.jobs.create_job("scan", params=req.model_dump())
+            cancel_event = Event()
+            with scan_state_lock:
+                # Nur aktive und die letzten 32 abgeschlossenen Scan-Snapshots halten.
+                for old_id in list(active_scans)[:-32]:
+                    if active_scans[old_id]["status"] not in ("pending", "running"):
+                        del active_scans[old_id]
+                active_scans[job_id] = {
+                    "job_id": job_id, "status": "pending", "files_found": 0,
+                    "current_item": None, "result": None, "error": None,
+                    "cancel_event": cancel_event,
+                }
+
+            def snapshot(**changes):
+                with scan_state_lock:
+                    active_scans[job_id].update(changes)
+
+            def worker() -> None:
+                try:
+                    if cancel_event.is_set():
+                        raise ScanSafetyLimit("Scan abgebrochen; keine Teil-Ergebnisse gespeichert.")
+                    state.jobs.start(job_id)
+                    snapshot(status="running")
+
+                    def checkpoint():
+                        if cancel_event.is_set():
+                            raise ScanSafetyLimit("Scan abgebrochen; keine Teil-Ergebnisse gespeichert.")
+
+                    result = scan_directories(
+                        state.db, [Path(d) for d in req.directories],
+                        compute_hash=req.compute_hash, run_ffprobe=req.run_ffprobe,
+                        checkpoint=checkpoint,
+                        progress=lambda count, path: snapshot(files_found=count, current_item=path),
+                    )
+                    state.jobs.report_progress(
+                        job_id, processed_items=result.files_found,
+                        error_delta=len(result.errors),
+                    )
+                    state.jobs.complete(job_id)
+                    snapshot(status="completed", result=dataclass_to_dict(result))
+                except Exception as exc:
+                    # Der Scanner rollt seine gesamte Transaktion bei Exception zurueck.
+                    if cancel_event.is_set():
+                        state.jobs.cancel(job_id)
+                        snapshot(status="cancelled", error=str(exc))
+                    else:
+                        state.jobs.fail(job_id, str(exc))
+                        snapshot(status="failed", error=str(exc))
+                finally:
+                    scan_lock.release()
+
+            Thread(target=worker, name="genesis-scan", daemon=True).start()
+            return {"job_id": job_id}
+        except Exception:
+            scan_lock.release()
+            raise
+
+    @app.get("/scan/{job_id}/status", dependencies=[require_token])
+    def scan_status(job_id: str) -> dict:
+        with scan_state_lock:
+            entry = active_scans.get(job_id)
+            if entry is None:
+                raise HTTPException(status_code=404, detail="Scan-Job nicht gefunden")
+            return {k: v for k, v in entry.items() if k != "cancel_event"}
+
+    @app.post("/scan/{job_id}/cancel", dependencies=[require_token])
+    def cancel_scan(job_id: str) -> dict:
+        with scan_state_lock:
+            entry = active_scans.get(job_id)
+            if entry is None:
+                raise HTTPException(status_code=404, detail="Scan-Job nicht gefunden")
+            if entry["status"] in ("pending", "running"):
+                entry["cancel_event"].set()
+                return {"job_id": job_id, "cancel_requested": True}
+            return {"job_id": job_id, "cancel_requested": False, "status": entry["status"]}
 
     @app.post("/scan", dependencies=[require_token])
     def trigger_scan(req: ScanRequest, state: AppState = Depends(get_state)) -> dict:
@@ -1064,6 +1167,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         job = state.jobs.get_job(job_id)
         if job is None:
             raise HTTPException(status_code=404, detail="Job nicht gefunden")
+        with scan_state_lock:
+            if job_id in active_scans:
+                raise HTTPException(status_code=409, detail="Scan kann nur abgebrochen, nicht pausiert werden")
         try:
             state.jobs.pause(job_id)
         except JobTransitionError as exc:
@@ -1075,6 +1181,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         job = state.jobs.get_job(job_id)
         if job is None:
             raise HTTPException(status_code=404, detail="Job nicht gefunden")
+        with scan_state_lock:
+            if job_id in active_scans:
+                raise HTTPException(status_code=409, detail="Scan kann nicht pausiert/fortgesetzt werden")
         try:
             state.jobs.resume(job_id)
         except JobTransitionError as exc:
@@ -1086,6 +1195,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         job = state.jobs.get_job(job_id)
         if job is None:
             raise HTTPException(status_code=404, detail="Job nicht gefunden")
+        with scan_state_lock:
+            entry = active_scans.get(job_id)
+            if entry is not None and entry["status"] in ("pending", "running"):
+                entry["cancel_event"].set()
+                return {**job_to_dict(job), "cancel_requested": True}
         try:
             state.jobs.cancel(job_id)
         except JobTransitionError as exc:

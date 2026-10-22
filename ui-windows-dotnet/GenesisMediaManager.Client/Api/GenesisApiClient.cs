@@ -332,11 +332,20 @@ public sealed partial class GenesisApiClient : IDisposable
         return response?.Sources ?? new List<MediaSourceEntry>();
     }
 
-    public async Task<ScanResponse?> TriggerScanAsync(IEnumerable<string> directories, CancellationToken ct = default)
+    public async Task<ScanStartResponse?> StartScanAsync(IEnumerable<string> directories, CancellationToken ct = default)
     {
-        var response = await _http.PostAsJsonAsync("/scan", new { directories }, JsonOptions, ct);
+        var response = await _http.PostAsJsonAsync("/scan/start", new { directories }, JsonOptions, ct);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<ScanResponse>(JsonOptions, ct);
+        return await response.Content.ReadFromJsonAsync<ScanStartResponse>(JsonOptions, ct);
+    }
+
+    public Task<ScanStatus?> GetScanStatusAsync(string jobId, CancellationToken ct = default) =>
+        _http.GetFromJsonAsync<ScanStatus>($"/scan/{Uri.EscapeDataString(jobId)}/status", JsonOptions, ct);
+
+    public async Task CancelScanAsync(string jobId, CancellationToken ct = default)
+    {
+        var response = await _http.PostAsync($"/scan/{Uri.EscapeDataString(jobId)}/cancel", null, ct);
+        response.EnsureSuccessStatusCode();
     }
 
     // --- Phase 2: Metadaten-Vorschlaege (§10/§11/§17) -----------------------
@@ -538,7 +547,9 @@ public sealed record MediaSourceEntry(
 
 public sealed record MediaSourcesResponse(List<MediaSourceEntry> Sources);
 
-public sealed record ScanResponse(string JobId, object Result);
+public sealed record ScanStartResponse(string JobId);
+public sealed record ScanStatus(string JobId, string Status, int FilesFound,
+    string? CurrentItem, System.Text.Json.JsonElement? Result, string? Error);
 
 // --- Phase 2: Metadaten-Vorschlaege --------------------------------------
 

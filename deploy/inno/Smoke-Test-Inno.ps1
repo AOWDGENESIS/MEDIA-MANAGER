@@ -82,6 +82,7 @@ try {
         (Join-Path $installDir 'client\GenesisMediaManager.exe'),
         (Join-Path $installDir 'backend\run_api.py'),
         (Join-Path $installDir 'Start-GenesisMediaManager.bat'),
+        (Join-Path $installDir 'installer\Check-GenesisCore.py'),
         (Join-Path $installDir 'runtime\tools\ffmpeg\ffmpeg.exe'),
         (Join-Path $installDir 'runtime\tools\ffmpeg\ffprobe.exe'),
         (Join-Path $installDir 'runtime\tools\chromaprint\fpcalc.exe'),

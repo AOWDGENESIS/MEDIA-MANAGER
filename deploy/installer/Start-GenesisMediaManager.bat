@@ -23,6 +23,7 @@ REM Bei jedem erneuten Doppelklick KEINEN zweiten Core-Service starten:
 REM dieser wuerde am schon belegten Port 8420 scheitern und das Log des
 REM funktionierenden ersten Prozesses mit einer Fehlermeldung ueberschreiben.
 REM /health muss wirklich GENESIS mit status=ok melden (nicht irgendein 200).
+REM Nur der mitgelieferte Interpreter, nie eine PowerShell pro Sekunde.
 call :wait_for_core 1
 if not errorlevel 1 (
     echo [GENESIS] Core-Service laeuft bereits - vorhandenen Prozess verwenden.
@@ -56,7 +57,6 @@ endlocal
 exit /b 0
 
 :wait_for_core
-REM Ein PowerShell-Prozess pro Wartephase (1 oder 60 Versuche), NICHT
-REM pro Sekunde ein neues Fenster/Prozess. Der Probe-Aufruf ist lokal.
-powershell -NoProfile -NonInteractive -Command "$max=%~1; for($i=0; $i -lt $max; $i++){ try { $s=Invoke-RestMethod -Uri 'http://127.0.0.1:8420/health' -TimeoutSec 1; if($s.status -eq 'ok'){exit 0} } catch {}; if($i -lt ($max-1)){Start-Sleep -Seconds 1} }; exit 1" >nul 2>&1
+REM Ein gebuendelter Python-Prozess pro Wartephase; kein PowerShell-Fenster.
+"%INSTALLDIR%runtime\python\python.exe" "%INSTALLDIR%installer\Check-GenesisCore.py" %~1 >nul 2>&1
 exit /b %errorlevel%

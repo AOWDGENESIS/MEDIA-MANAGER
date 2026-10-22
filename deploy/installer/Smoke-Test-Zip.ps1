@@ -41,6 +41,7 @@ try {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer
     if ($LASTEXITCODE -ne 0) { throw "ZIP-Installation fehlgeschlagen: $LASTEXITCODE" }
     foreach ($file in @($client, $python, $uninstaller,
+                        (Join-Path $installDir 'installer\Check-GenesisCore.py'),
                         (Join-Path $installDir 'backend\run_api.py'))) {
         if (-not (Test-Path $file)) { throw "ZIP-Installation unvollstaendig: $file" }
     }

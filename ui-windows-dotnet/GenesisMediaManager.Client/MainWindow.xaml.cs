@@ -20,6 +20,10 @@ public partial class MainWindow : Window
     // settings_view.py::_on_save_clicked: _reload() ZUERST, Erfolgsmeldung
     // DANACH - sonst wuerde der Neubau die Meldung sofort ueberschreiben).
     private string? _pendingSettingsStatus;
+    private string? _activeScanJobId;
+    private TextBlock? _scanLiveStatus;
+    private Button? _scanLiveStartButton;
+    private Button? _scanLiveCancelButton;
 
     // Gleiches Muster fuer die Metadaten-Provider-Ansicht
     // (providers_view.py::_on_save_clicked).
@@ -1467,6 +1471,9 @@ public partial class MainWindow : Window
         var foldersListBox = new ListBox { Height = 120, Margin = new Thickness(0, 0, 0, 6) };
         foreach (var folder in settings.Paths.MediaFolders) foldersListBox.Items.Add(folder);
         var foldersStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) };
+        _scanLiveStatus = foldersStatus;
+        if (_activeScanJobId != null)
+            foldersStatus.Text = _tr.Tr("settings_view.scan_running", ("count", 0));
         var foldersButtonRow = new StackPanel { Orientation = Orientation.Horizontal };
         var addFolderButton = new Button
         {
@@ -1506,6 +1513,30 @@ public partial class MainWindow : Window
                 foldersListBox.Items.Remove(selected);
             }
         };
+        var cancelScanButton = new Button
+        {
+            Content = _tr.Tr("settings_view.scan_cancel"), Padding = new Thickness(10, 4, 10, 4),
+            Margin = new Thickness(8, 0, 0, 0), IsEnabled = _activeScanJobId != null,
+        };
+        scanButton.IsEnabled = _activeScanJobId == null;
+        _scanLiveStartButton = scanButton;
+        _scanLiveCancelButton = cancelScanButton;
+        cancelScanButton.Click += async (_, _) =>
+        {
+            if (_activeScanJobId == null) return;
+            cancelScanButton.IsEnabled = false;
+            try
+            {
+                await _api.CancelScanAsync(_activeScanJobId);
+                if (_scanLiveStatus != null)
+                    _scanLiveStatus.Text = _tr.Tr("settings_view.scan_cancelling");
+            }
+            catch (Exception ex)
+            {
+                if (_scanLiveCancelButton != null) _scanLiveCancelButton.IsEnabled = true;
+                ShowApiError(ex);
+            }
+        };
         scanButton.Click += async (_, _) =>
         {
             var folders = foldersListBox.Items.Cast<string>().ToList();
@@ -1514,27 +1545,60 @@ public partial class MainWindow : Window
                 foldersStatus.Text = _tr.Tr("settings_view.scan_no_folders");
                 return;
             }
+            scanButton.IsEnabled = false;
             try
             {
-                var result = await _api.TriggerScanAsync(folders);
-                var filesFound = 0;
-                if (result?.Result is System.Text.Json.JsonElement element &&
-                    element.TryGetProperty("files_found", out var filesFoundElement))
+                var started = await _api.StartScanAsync(folders);
+                if (started == null) throw new InvalidOperationException("Scan-Start ohne Job-ID");
+                _activeScanJobId = started.JobId;
+                if (_scanLiveCancelButton != null) _scanLiveCancelButton.IsEnabled = true;
+                while (true)
                 {
-                    filesFound = filesFoundElement.GetInt32();
+                    var status = await _api.GetScanStatusAsync(started.JobId);
+                    if (status == null) throw new InvalidOperationException("Scan-Status fehlt");
+                    if (status.Status == "completed")
+                    {
+                        if (_scanLiveStatus != null)
+                            _scanLiveStatus.Text = _tr.Tr("settings_view.scan_done", ("count", status.FilesFound));
+                        _activeScanJobId = null;
+                        break;
+                    }
+                    if (status.Status == "cancelled")
+                    {
+                        if (_scanLiveStatus != null)
+                            _scanLiveStatus.Text = _tr.Tr("settings_view.scan_cancelled");
+                        _activeScanJobId = null;
+                        break;
+                    }
+                    if (status.Status == "failed")
+                    {
+                        _activeScanJobId = null;
+                        throw new InvalidOperationException(status.Error ?? "Scan fehlgeschlagen");
+                    }
+                    if (_scanLiveStatus != null)
+                        _scanLiveStatus.Text = _tr.Tr("settings_view.scan_running", ("count", status.FilesFound));
+                    await Task.Delay(500);
                 }
-                foldersStatus.Text = _tr.Tr("settings_view.scan_done", ("count", filesFound));
             }
             catch (Exception ex)
             {
-                // Gap L (§37): Fehlerdialog mit Fehler-ID/Loesungshinweis wie
-                // show_api_error() in der Python-Referenz.
+                // Bei Status-/Netzfehler bleibt die Job-ID sichtbar und der
+                // Abbruch-Knopf aktiv; kein zweiter Scan bis zur Klaerung.
                 ShowApiError(ex, _tr.Tr("settings_view.scan_failed", ("error", ex.Message)));
+            }
+            finally
+            {
+                if (_activeScanJobId == null)
+                {
+                    if (_scanLiveStartButton != null) _scanLiveStartButton.IsEnabled = true;
+                    if (_scanLiveCancelButton != null) _scanLiveCancelButton.IsEnabled = false;
+                }
             }
         };
         foldersButtonRow.Children.Add(addFolderButton);
         foldersButtonRow.Children.Add(removeFolderButton);
         foldersButtonRow.Children.Add(scanButton);
+        foldersButtonRow.Children.Add(cancelScanButton);
         root.Children.Add(BuildGroup(_tr.Tr("settings_view.section_media_folders"), new UIElement[]
         {
             foldersNote, foldersListBox, foldersButtonRow, foldersStatus,

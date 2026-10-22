@@ -91,6 +91,7 @@
     </ComponentGroup>
     <ComponentGroup Id="InstallerScriptFiles" Directory="InstallerDir">
       <Files Include="$(var.InstallerSourceDir)\*.ps1" />
+      <Files Include="$(var.InstallerSourceDir)\Check-GenesisCore.py" />
     </ComponentGroup>
 
     <!-- Start-Skript direkt im Installationswurzelordner -->

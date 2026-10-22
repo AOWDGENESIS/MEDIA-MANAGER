@@ -34,6 +34,7 @@ try {
     ) -PassThru -Wait
     if ($p.ExitCode -ne 0) { throw "MSI-Installation fehlgeschlagen: $($p.ExitCode)" }
     foreach ($file in @($client, $backend, (Join-Path $installDir 'Start-GenesisMediaManager.bat'),
+                       (Join-Path $installDir 'installer\Check-GenesisCore.py'),
                        (Join-Path $installDir 'MsiOwnership.txt'))) {
         if (-not (Test-Path $file)) { throw "MSI enthaelt Datei nicht: $file" }
     }

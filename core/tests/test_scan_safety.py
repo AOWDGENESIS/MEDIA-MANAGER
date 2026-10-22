@@ -58,6 +58,24 @@ def test_scan_deadline_rolls_back_without_partial_library(db: Database, tmp_path
         assert session.scalar(select(func.count(MediaFile.id))) == 0
 
 
+def test_hashing_checks_cancel_between_chunks(tmp_path: Path):
+    from genesis_core.scanner.hashing import sha256_of_file
+
+    media = tmp_path / "large.mp3"
+    media.write_bytes(b"abcdef")
+    calls = 0
+
+    def checkpoint():
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise scanner.ScanSafetyLimit("abgebrochen")
+
+    with pytest.raises(scanner.ScanSafetyLimit, match="abgebrochen"):
+        sha256_of_file(media, chunk_size=2, checkpoint=checkpoint)
+    assert calls == 2
+
+
 def test_scan_hash_budget_fails_before_large_file_is_read(db: Database, tmp_path: Path, monkeypatch):
     (tmp_path / "track.mp3").write_bytes(b"abcde")
     monkeypatch.setattr(scanner, "MAX_HASH_BYTES_PER_SCAN", 4)
